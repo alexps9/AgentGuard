@@ -749,15 +749,22 @@ class ConsoleState:
         }
 
         event_dict = self._build_event_dict(event, now)
+        runtime_state = self._build_runtime_state_dict(event)
         decision_dict = self._build_decision_dict(decision, matched, risk, plugin_result)
 
         with self._lock:
             self._traffic.append(entry)
-            self._audit.append({"event": event_dict, "decision": decision_dict})
+            self._audit.append({
+                "event": event_dict,
+                "decision": decision_dict,
+                "runtime_state": runtime_state,
+            })
 
     @staticmethod
     def _build_event_dict(event: RuntimeEvent, ts: float) -> dict[str, Any]:
         ctx = event.context
+        payload = event.payload.to_dict()
+        metadata = dict(event.metadata or {})
         return {
             "event_id": event.event_id,
             "ts_ms": int(ts * 1000),
@@ -770,17 +777,57 @@ class ConsoleState:
                 "trust_level": 0,
             },
             "tool_call": {
-                "tool_name": getattr(event.payload, "tool_name", None),
-                "args": getattr(event.payload, "arguments", {}) or {},
+                "tool_name": payload.get("tool_name"),
+                "args": payload.get("arguments") or {},
+                "result": payload.get("result"),
+                "source": metadata.get("toolSource") or metadata.get("sourceFramework"),
+                "mcp": {
+                    key: metadata.get(key)
+                    for key in (
+                        "mcp_unique_id",
+                        "mcp_name",
+                        "mcp_tool_name",
+                        "mcp_transport",
+                        "mcp_remote",
+                        "mcp_match_confidence",
+                    )
+                    if metadata.get(key) not in (None, "")
+                },
                 "target": {},
                 "sink_type": "none",
                 "label": {
-                    "boundary": "internal",
-                    "sensitivity": "low",
-                    "integrity": "trusted",
-                    "tags": getattr(event.payload, "capabilities", []) or [],
+                    "boundary": metadata.get("tool_boundary") or "internal",
+                    "sensitivity": metadata.get("tool_sensitivity") or "low",
+                    "integrity": metadata.get("tool_integrity") or "trusted",
+                    "tags": payload.get("capabilities") or [],
                 },
             },
+        }
+
+    @staticmethod
+    def _build_runtime_state_dict(event: RuntimeEvent) -> dict[str, Any]:
+        payload = event.payload.to_dict()
+        metadata = dict(event.metadata or {})
+        return {
+            "event_type": event.event_type.value,
+            "tool_name": payload.get("tool_name"),
+            "arguments": payload.get("arguments") or {},
+            "result": payload.get("result"),
+            "source": metadata.get("toolSource") or metadata.get("sourceFramework"),
+            "mcp": {
+                key: metadata.get(key)
+                for key in (
+                    "mcp_unique_id",
+                    "mcp_name",
+                    "mcp_tool_name",
+                    "mcp_transport",
+                    "mcp_remote",
+                    "mcp_match_confidence",
+                )
+                if metadata.get(key) not in (None, "")
+            },
+            "payload": payload,
+            "metadata": metadata,
         }
 
     @staticmethod

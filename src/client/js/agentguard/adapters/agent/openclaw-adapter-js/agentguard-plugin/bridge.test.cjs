@@ -516,6 +516,102 @@ test("remote-enabled sessions report configured MCP descriptors", async () => {
   }
 });
 
+test("MCP runtime tool calls carry scanned MCP metadata through existing tool hooks", async () => {
+  const configDir = fs.mkdtempSync(path.join(os.tmpdir(), "agentguard-openclaw-mcp-runtime-"));
+  const serverDir = path.join(configDir, "mcp-server");
+  writeFile(
+    path.join(serverDir, "server.js"),
+    [
+      "import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';",
+      "const server = new McpServer({ name: 'demo', version: '1.0.0' });",
+      "server.tool('read_file', 'Read files', {}, async () => ({}));",
+    ].join("\n"),
+  );
+  writeFile(
+    path.join(configDir, ".cursor", "mcp.json"),
+    JSON.stringify({
+      mcpServers: {
+        local_mcp: {
+          command: "node",
+          args: ["server.js"],
+          cwd: "./mcp-server",
+          tools: [
+            {
+              name: "read_file",
+              description: "Read files",
+              inputSchema: { type: "object" },
+            },
+          ],
+        },
+      },
+    }),
+  );
+
+  class InspectMcpBeforePlugin extends BasePlugin {
+    constructor() {
+      super();
+      this.event_types = [EventType.TOOL_INVOKE];
+    }
+
+    check(event) {
+      assert.equal(event.payload.tool_name, "local_mcp__read_file");
+      assert.deepEqual(event.payload.arguments, { path: "./note.txt" });
+      assert.equal(event.metadata.toolSource, "mcp");
+      assert.equal(event.metadata.sourceFramework, "mcp_native");
+      assert.equal(event.metadata.mcp_name, "local_mcp");
+      assert.equal(event.metadata.mcp_tool_name, "read_file");
+      assert.equal(event.metadata.mcp_transport, "stdio");
+      assert.equal(event.metadata.mcp_remote, false);
+      assert.equal(event.metadata.mcp_unique_id.startsWith("agent-main:"), true);
+      return CheckResult.empty();
+    }
+  }
+
+  class InspectMcpAfterPlugin extends BasePlugin {
+    constructor() {
+      super();
+      this.event_types = [EventType.TOOL_RESULT];
+    }
+
+    check(event) {
+      assert.equal(event.payload.tool_name, "local_mcp__read_file");
+      assert.equal(event.payload.result, "{\"content\":[{\"type\":\"text\",\"text\":\"hello\"}]}");
+      assert.equal(event.metadata.toolSource, "mcp");
+      assert.equal(event.metadata.mcp_name, "local_mcp");
+      assert.equal(event.metadata.mcp_tool_name, "read_file");
+      return CheckResult.empty();
+    }
+  }
+
+  const bridge = new AgentGuardOpenClawBridge({
+    pluginConfig: {
+      phases: buildPhases({
+        tool_before: { client: [InspectMcpBeforePlugin], server: [] },
+        tool_after: { client: [InspectMcpAfterPlugin], server: [] },
+      }),
+      mcpScan: {
+        enabled: true,
+        roots: [configDir],
+      },
+    },
+  });
+
+  await bridge.runBeforeToolCall({
+    ctx: buildToolContext(),
+    event: {
+      toolName: "local_mcp__read_file",
+      params: { path: "./note.txt" },
+    },
+  });
+  await bridge.runAfterToolCall({
+    ctx: buildToolContext(),
+    event: {
+      toolName: "local_mcp__read_file",
+      result: { content: [{ type: "text", text: "hello" }] },
+    },
+  });
+});
+
 test("before_tool_call blocks when remote review is unavailable and fail_closed is enabled", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => {

@@ -257,6 +257,45 @@ def test_observer_exposes_plugin_summary_metadata():
     assert decision["plugin_summary"][0]["reason"] == "allowed by fake diagnostic plugin"
 
 
+def test_audit_recent_exposes_runtime_payload_and_mcp_metadata():
+    con = _console()
+    con.manager.decide(
+        {
+            "context": {"session_id": "s-mcp-runtime", "agent_id": "agent-alpha"},
+            "current_event": {
+                "event_type": "tool_result",
+                "payload": {
+                    "tool_name": "local_mcp__read_file",
+                    "result": "{\"content\":[{\"type\":\"text\",\"text\":\"hello\"}]}",
+                },
+                "metadata": {
+                    "toolSource": "mcp",
+                    "sourceFramework": "mcp_native",
+                    "mcp_unique_id": "agent-alpha:mcp-sha",
+                    "mcp_name": "local_mcp",
+                    "mcp_tool_name": "read_file",
+                    "mcp_transport": "stdio",
+                    "mcp_remote": False,
+                },
+            },
+            "trajectory_window": [],
+        }
+    )
+
+    audit = con.audit_recent("agent-alpha")[0]
+    event = audit["event"]
+    runtime_state = audit["runtime_state"]
+
+    assert event["tool_call"]["result"] == "{\"content\":[{\"type\":\"text\",\"text\":\"hello\"}]}"
+    assert event["tool_call"]["source"] == "mcp"
+    assert event["tool_call"]["mcp"]["mcp_name"] == "local_mcp"
+    assert event["tool_call"]["mcp"]["mcp_tool_name"] == "read_file"
+    assert runtime_state["result"] == "{\"content\":[{\"type\":\"text\",\"text\":\"hello\"}]}"
+    assert runtime_state["metadata"]["toolSource"] == "mcp"
+    assert runtime_state["mcp"]["mcp_name"] == "local_mcp"
+    assert runtime_state["mcp"]["mcp_tool_name"] == "read_file"
+
+
 def test_health_reports_rule_counts():
     con = _console()
     _seed_runtime_rules(con)

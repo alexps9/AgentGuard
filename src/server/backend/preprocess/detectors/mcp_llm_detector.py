@@ -108,14 +108,19 @@ class MCPLLMDetector(BaseDetector):
 
 def _llm_reviewer_config(llm_config: dict[str, Any], env: dict[str, Any]) -> dict[str, Any]:
     config = dict(llm_config or {})
-    env_map = {
-        "backend": "AGENTGUARD_MCP_LLM_BACKEND",
-        "model": "AGENTGUARD_MCP_LLM_MODEL",
-        "base_url": "AGENTGUARD_MCP_LLM_BASE_URL",
-        "api_key": "AGENTGUARD_MCP_LLM_API_KEY",
-        "timeout_s": "AGENTGUARD_MCP_LLM_TIMEOUT_S",
-    }
-    for key, env_key in env_map.items():
+    env_map = [
+        ("backend", "AGENTGUARD_MCP_LLM_BACKEND"),
+        ("backend", "AGENTGUARD_LLM_BACKEND"),
+        ("model", "AGENTGUARD_MCP_LLM_MODEL"),
+        ("model", "AGENTGUARD_LLM_MODEL"),
+        ("base_url", "AGENTGUARD_MCP_LLM_BASE_URL"),
+        ("base_url", "AGENTGUARD_LLM_BASE_URL"),
+        ("api_key", "AGENTGUARD_MCP_LLM_API_KEY"),
+        ("api_key", "AGENTGUARD_LLM_API_KEY"),
+        ("timeout_s", "AGENTGUARD_MCP_LLM_TIMEOUT_S"),
+        ("timeout_s", "AGENTGUARD_LLM_TIMEOUT_S"),
+    ]
+    for key, env_key in env_map:
         if key not in config and env.get(env_key):
             config[key] = env.get(env_key)
     if "base_url" not in config and env.get("OPENAI_API_KEY") and not env.get("OPENAI_BASE_URL"):
@@ -124,11 +129,17 @@ def _llm_reviewer_config(llm_config: dict[str, Any], env: dict[str, Any]) -> dic
 
 
 def _has_llm_config(config: dict[str, Any], env: dict[str, Any]) -> bool:
-    backend = str(config.get("backend") or env.get("AGENTGUARD_LLM_BACKEND") or "").strip().lower()
+    backend = str(
+        config.get("backend")
+        or env.get("AGENTGUARD_MCP_LLM_BACKEND")
+        or env.get("AGENTGUARD_LLM_BACKEND")
+        or ""
+    ).strip().lower()
     if backend in {"heuristic", "offline"}:
         return True
     return bool(
         config.get("base_url")
+        or env.get("AGENTGUARD_LLM_BASE_URL")
         or env.get("AGENTGUARD_MCP_LLM_BASE_URL")
         or env.get("OPENAI_BASE_URL")
     )

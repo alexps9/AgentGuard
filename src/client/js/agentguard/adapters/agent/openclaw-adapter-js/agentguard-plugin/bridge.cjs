@@ -836,6 +836,168 @@ function buildMcpScanMetadata(mcpScan) {
   };
 }
 
+function normalizeMcpToolFragment(value) {
+  return asNonEmptyString(value) || "";
+}
+
+function providerSafeMcpPrefix(name) {
+  const raw = normalizeMcpToolFragment(name).toLowerCase();
+  const normalized = raw.replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  const prefixed = /^[a-z]/.test(normalized) ? normalized : `mcp-${normalized || "server"}`;
+  return prefixed;
+}
+
+function candidateMcpPrefixes(mcp) {
+  const prefixes = new Set();
+  for (const value of [mcp.name, mcp.config_key]) {
+    const raw = normalizeMcpToolFragment(value);
+    if (!raw) {
+      continue;
+    }
+    prefixes.add(raw);
+    prefixes.add(raw.toLowerCase());
+    prefixes.add(providerSafeMcpPrefix(raw));
+  }
+  return [...prefixes].filter(Boolean);
+}
+
+function candidateMcpToolNames(mcp, tool) {
+  const toolName = normalizeMcpToolFragment(tool && tool.name);
+  if (!toolName) {
+    return [];
+  }
+  const names = new Set([toolName]);
+  for (const prefix of candidateMcpPrefixes(mcp)) {
+    names.add(`${prefix}__${toolName}`);
+    names.add(`mcp:${prefix}:${toolName}`);
+  }
+  return [...names];
+}
+
+function extractMcpEventHints(event = {}) {
+  const mcp = event.mcp && typeof event.mcp === "object" && !Array.isArray(event.mcp)
+    ? event.mcp
+    : {};
+  return {
+    server: normalizeMcpToolFragment(
+      event.mcpServerName
+        || event.mcp_server_name
+        || event.mcpServer
+        || event.mcp_server
+        || event.serverName
+        || event.server
+        || mcp.serverName
+        || mcp.server_name
+        || mcp.server
+        || mcp.name,
+    ),
+    tool: normalizeMcpToolFragment(
+      event.mcpToolName
+        || event.mcp_tool_name
+        || event.originalToolName
+        || event.original_tool_name
+        || mcp.toolName
+        || mcp.tool_name,
+    ),
+    id: normalizeMcpToolFragment(event.mcpUniqueId || event.mcp_unique_id || mcp.mcp_unique_id || mcp.id),
+  };
+}
+
+function mcpUniqueIdForContext(context, mcp) {
+  const explicit = normalizeMcpToolFragment(mcp.mcp_unique_id || mcp.id);
+  if (explicit) {
+    return explicit;
+  }
+  const agentId = normalizeMcpToolFragment(context && context.agent_id);
+  const sha256 = normalizeMcpToolFragment(mcp.sha256);
+  return agentId && sha256 ? `${agentId}:${sha256}` : sha256;
+}
+
+function serverHintMatchesMcp(serverHint, idHint, context, mcp) {
+  const server = normalizeMcpToolFragment(serverHint).toLowerCase();
+  const id = normalizeMcpToolFragment(idHint);
+  if (id && id === mcpUniqueIdForContext(context, mcp)) {
+    return true;
+  }
+  if (!server) {
+    return false;
+  }
+  return candidateMcpPrefixes(mcp).some((prefix) => prefix.toLowerCase() === server)
+    || normalizeMcpToolFragment(mcp.sha256) === server;
+}
+
+function toolNameMatchesMcpTool(runtimeToolName, toolName, mcp, tool) {
+  const runtimeName = normalizeMcpToolFragment(runtimeToolName);
+  const hintedTool = normalizeMcpToolFragment(toolName);
+  return candidateMcpToolNames(mcp, tool).some((candidate) => candidate === runtimeName)
+    || (hintedTool && normalizeMcpToolFragment(tool && tool.name) === hintedTool);
+}
+
+function matchMcpRuntimeTool(state, event = {}) {
+  const mcps = Array.isArray(state && state.mcpScan && state.mcpScan.mcps)
+    ? state.mcpScan.mcps
+    : [];
+  if (!mcps.length) {
+    return null;
+  }
+  const runtimeToolName = normalizeMcpToolFragment(event.toolName);
+  const hints = extractMcpEventHints(event);
+  const matches = [];
+
+  for (const mcp of mcps) {
+    const tools = Array.isArray(mcp.tools) ? mcp.tools : [];
+    const serverMatches = serverHintMatchesMcp(hints.server, hints.id, state.context, mcp);
+    if (serverMatches && (!tools.length || !hints.tool)) {
+      matches.push({ mcp, tool: null, confidence: "server_hint" });
+      continue;
+    }
+    for (const tool of tools) {
+      if (toolNameMatchesMcpTool(runtimeToolName, hints.tool, mcp, tool)) {
+        matches.push({
+          mcp,
+          tool,
+          confidence: serverMatches || runtimeToolName.includes("__") || runtimeToolName.startsWith("mcp:")
+            ? "qualified_tool"
+            : "tool_name",
+        });
+      }
+    }
+  }
+
+  if (matches.length !== 1) {
+    return null;
+  }
+  return matches[0];
+}
+
+function buildMcpRuntimeMetadata(state, event = {}) {
+  const match = matchMcpRuntimeTool(state, event);
+  if (!match) {
+    return {};
+  }
+  const { mcp, tool, confidence } = match;
+  const mcpToolName = normalizeMcpToolFragment(tool && tool.name)
+    || normalizeMcpToolFragment(event.mcpToolName || event.mcp_tool_name)
+    || normalizeMcpToolFragment(event.toolName);
+  return {
+    toolSource: "mcp",
+    sourceFramework: "mcp_native",
+    mcp_unique_id: mcpUniqueIdForContext(state.context, mcp),
+    mcp_name: normalizeMcpToolFragment(mcp.name),
+    mcp_tool_name: mcpToolName,
+    mcp_match_confidence: confidence,
+    mcp_transport: normalizeMcpToolFragment(mcp.transport),
+    mcp_remote: Boolean(mcp.remote),
+    mcp_config_path: normalizeMcpToolFragment(mcp.config_path),
+    mcp_config_key: normalizeMcpToolFragment(mcp.config_key),
+    mcp_root_path: normalizeMcpToolFragment(mcp.root_path),
+    mcp_entry_file: normalizeMcpToolFragment(mcp.entry_file),
+    mcp_url: normalizeMcpToolFragment(mcp.url),
+    mcp_sha256: normalizeMcpToolFragment(mcp.sha256),
+    mcp_source_status: normalizeMcpToolFragment(mcp.source_status),
+  };
+}
+
 function buildToolReportPayload(tool) {
   const metadata =
     tool && typeof tool.metadata === "object" && tool.metadata && !Array.isArray(tool.metadata)
@@ -1291,6 +1453,7 @@ class AgentGuardOpenClawBridge {
       runId: ctx.runId || event.runId,
       channelId: ctx.channelId,
     });
+    const mcpRuntimeMetadata = buildMcpRuntimeMetadata(state, event);
     const runtimeEvent = createRuntimeEvent({
       eventType: EventType.TOOL_INVOKE,
       context: state.context,
@@ -1306,6 +1469,7 @@ class AgentGuardOpenClawBridge {
         derivedPaths: event.derivedPaths || [],
         toolCallId: event.toolCallId || ctx.toolCallId,
         runId: event.runId || ctx.runId,
+        ...mcpRuntimeMetadata,
       },
     });
     const result = await this.enforce(state, runtimeEvent, { phase: "tool_before" });
@@ -1350,6 +1514,7 @@ class AgentGuardOpenClawBridge {
       runId: ctx.runId || event.runId,
       channelId: ctx.channelId,
     });
+    const mcpRuntimeMetadata = buildMcpRuntimeMetadata(state, event);
     const runtimeEvent = createRuntimeEvent({
       eventType: EventType.TOOL_RESULT,
       context: state.context,
@@ -1363,6 +1528,7 @@ class AgentGuardOpenClawBridge {
         runId: event.runId || ctx.runId,
         durationMs: event.durationMs,
         ...(event.error ? { error: event.error } : {}),
+        ...mcpRuntimeMetadata,
       },
     });
     await this.enforce(state, runtimeEvent, { phase: "tool_after" });
@@ -1516,11 +1682,13 @@ module.exports = {
     buildRuntimeContext,
     buildLlmInputMessages,
     buildLlmOutputText,
+    buildMcpRuntimeMetadata,
     buildUserBlockMessage,
     extractAssistantFinalText,
     formatToolResultContent,
     normalizeOpenClawContent,
     normalizeOpenClawMessage,
+    matchMcpRuntimeTool,
     isRemoteUnavailableDecision,
     loadConfigFile,
     loadPluginConfigSource,

@@ -5,6 +5,8 @@ import urllib.request
 
 from backend.api.dev_server import start_dev_server
 from backend.console.state import ConsoleState
+from backend.console.mcp_record import McpRecord
+from backend.preprocess.detectors.mcp_llm_detector import MCPLLMDetector
 from backend.preprocess.detectors.base import DetectionResult
 from backend.runtime.manager import RuntimeManager
 from shared.schemas.context import RuntimeContext
@@ -67,6 +69,33 @@ def test_console_register_and_detect_mcps_persists_result(monkeypatch):
     assert stored["detect_result"]["label"] == "suspicious"
     assert stored["detect_result"]["reason"] == "fake llm review"
     assert stored["mcp_resource"]["files"][0]["relative_path"] == "server.py"
+
+
+def test_mcp_llm_detector_accepts_global_llm_base_url(monkeypatch):
+    record = _make_mcp_record()
+    calls = []
+
+    class FakeLLMClient:
+        def __init__(self, config):
+            calls.append(config)
+
+        def complete(self, prompt, **kwargs):
+            assert "MCP security reviewer" in prompt
+            assert kwargs["temperature"] == 0
+            assert kwargs["max_tokens"] == 500
+            return '{"label":"benign","reason":"ok"}'
+
+    detector = MCPLLMDetector(
+        llm_client_factory=lambda config: FakeLLMClient(config),
+        env={"AGENTGUARD_LLM_BASE_URL": "https://env.example/v1"},
+    )
+
+    result = detector.detect(record)
+
+    assert result.label == "benign"
+    assert result.reason == "ok"
+    assert result.metadata["llm_review"]["skipped"] is False
+    assert calls[0]["base_url"] == "https://env.example/v1"
 
 
 def test_dev_server_mcp_report_and_detect_api_updates_registered_mcp():
@@ -157,3 +186,27 @@ def _get_json(url: str, *, headers: dict[str, str] | None = None) -> dict:
     request = urllib.request.Request(url, headers=headers or {}, method="GET")
     with urllib.request.urlopen(request, timeout=5) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def _make_mcp_record():
+    record = McpRecord.from_descriptor(
+        agent_id="mcp-agent",
+        user_id="mcp-user",
+        session_id="mcp-session",
+        descriptor={
+            "name": "demo-mcp",
+            "description": "Demo MCP",
+            "source_framework": "mcp_native",
+            "object_type": "mcp",
+            "transport": "stdio",
+            "root_path": "/tmp/mcp",
+            "entry_file": "server.py",
+            "sha256": "f" * 64,
+            "file_count": 3,
+            "total_size": 1234,
+            "extraction": {"level": "source_directory", "confidence": "high"},
+            "files": [{"relative_path": "server.py", "content": "print('hello')"}],
+        },
+    )
+    assert record is not None
+    return record
