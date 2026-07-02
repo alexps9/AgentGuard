@@ -342,6 +342,26 @@ def test_agent_chat_catalog_sync_creates_app_context_when_needed(monkeypatch):
     assert calls == ["enter", "exit"]
 
 
+def test_agent_chat_session_id_uses_conversation_before_message(monkeypatch):
+    adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.delenv("AGENTGUARD_SERVER_URL", raising=False)
+    metadata = {
+        "app_id": "app-1",
+        "conversation_id": "conversation-1",
+        "message_id": "message-1",
+        "task_id": "task-1",
+        "user_id": "user-1",
+    }
+
+    guard = adapter._make_guard(metadata)
+
+    assert guard.context.agent_id == "dify-agent-chat:app-1"
+    assert guard.context.session_id == "conversation-1"
+    assert guard.context.user_id == "user-1"
+    assert guard.context.metadata["message_id"] == "message-1"
+    assert guard.context.task_id == "task-1"
+
+
 def test_agent_chat_registers_only_runtime_enabled_tools_and_emits_events(monkeypatch):
     fake = _install_fake_dify_agent_chat_modules(monkeypatch)
     adapter = _fresh_adapter(monkeypatch)

@@ -370,7 +370,7 @@ def _make_guard(metadata: dict[str, Any]) -> Any:
     from agentguard import AgentGuard
 
     agent_id = metadata.get("app_id") or metadata.get("conversation_id") or "dify-agent-chat"
-    session_id = metadata.get("message_id") or metadata.get("task_id") or f"dify-agent-chat:{agent_id}"
+    session_id = _session_id_from_metadata(metadata, agent_id)
     guard = AgentGuard(
         session_id,
         user_id=metadata.get("user_id"),
@@ -386,6 +386,15 @@ def _make_guard(metadata: dict[str, Any]) -> Any:
     if metadata.get("task_id"):
         guard.context.task_id = str(metadata["task_id"])
     return guard
+
+
+def _session_id_from_metadata(metadata: dict[str, Any], agent_id: str) -> str:
+    return (
+        metadata.get("conversation_id")
+        or metadata.get("message_id")
+        or metadata.get("task_id")
+        or f"dify-agent-chat:{agent_id}"
+    )
 
 
 def _flush_guard(guard: Any, *, reason: str) -> None:
