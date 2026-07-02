@@ -225,6 +225,29 @@ def _fresh_adapter(monkeypatch):
     return importlib.reload(adapter)
 
 
+def _install_fake_app_event(monkeypatch):
+    events_pkg = types.ModuleType("events")
+    app_event_mod = types.ModuleType("events.app_event")
+
+    class FakeSignal:
+        def __init__(self):
+            self.receivers = []
+
+        def connect(self, receiver, weak=True):
+            self.receivers.append((receiver, weak))
+            return receiver
+
+        def send(self, sender, **kwargs):
+            for receiver, _weak in list(self.receivers):
+                receiver(sender, **kwargs)
+
+    signal = FakeSignal()
+    app_event_mod.app_model_config_was_updated = signal
+    monkeypatch.setitem(sys.modules, "events", events_pkg)
+    monkeypatch.setitem(sys.modules, "events.app_event", app_event_mod)
+    return signal
+
+
 def _event_types(guard):
     return [entry.event.event_type.value for entry in guard.trace.entries]
 
@@ -253,6 +276,86 @@ def test_install_dify_agent_chat_adapter_is_idempotent(monkeypatch):
     assert first["patched"] is True
     assert second["patched"] is False
     assert getattr(fake.AgentChatAppRunner.run, "__agentguard_dify_agent_chat_patched__", False)
+
+
+def test_install_dify_agent_chat_adapter_connects_config_update_event(monkeypatch):
+    fake = _install_fake_dify_agent_chat_modules(monkeypatch)
+    signal = _install_fake_app_event(monkeypatch)
+    adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_DIFY_CATALOG_SYNC_ENABLED", "true")
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+    monkeypatch.setattr(adapter.sys, "argv", ["gunicorn", "--bind", "0.0.0.0:5001", "app:socketio_app"])
+    scheduled = []
+
+    monkeypatch.setattr(adapter, "_schedule_agent_chat_catalog_sync", scheduled.append)
+
+    first = adapter.install_dify_agent_chat_adapter()
+    second = adapter.install_dify_agent_chat_adapter()
+
+    assert first["config_update_sync"] == {"enabled": True, "installed": True}
+    assert second["config_update_sync"] == {"enabled": True, "installed": False, "reason": "already_installed"}
+    assert len(signal.receivers) == 1
+    assert getattr(fake.AgentChatAppRunner.run, "__agentguard_dify_agent_chat_patched__", False)
+
+    signal.send(types.SimpleNamespace(id="app-1"))
+
+    assert scheduled == ["app-1"]
+
+
+def test_agent_chat_config_update_ignores_non_agent_mode_changes(monkeypatch):
+    signal = _install_fake_app_event(monkeypatch)
+    adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_DIFY_CATALOG_SYNC_ENABLED", "true")
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+    scheduled = []
+
+    monkeypatch.setattr(adapter, "_schedule_agent_chat_catalog_sync", scheduled.append)
+    adapter.install_dify_agent_chat_config_update_sync()
+
+    signal.send(types.SimpleNamespace(id="app-1"), app_model_config=types.SimpleNamespace(agent_mode=None))
+    signal.send(types.SimpleNamespace(id="app-1"), app_model_config={"opening_statement": "hello"})
+    signal.send(types.SimpleNamespace(id="app-1"), app_model_config={"agent_mode": {"enabled": True}})
+
+    assert scheduled == ["app-1"]
+
+
+def test_agent_chat_catalog_sync_defaults_to_api_process(monkeypatch):
+    import agentguard.adapters.agent.dify_flask as dify_flask
+
+    importlib.reload(dify_flask)
+    adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_DIFY_CATALOG_SYNC_ENABLED", "true")
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+    monkeypatch.setattr(adapter.sys, "argv", ["celery", "-A", "app.celery"])
+
+    assert adapter.start_dify_agent_chat_catalog_sync() == {
+        "enabled": False,
+        "reason": "process_not_allowed",
+    }
+
+    monkeypatch.setattr(adapter.sys, "argv", ["gunicorn", "--bind", "0.0.0.0:5001", "app:socketio_app"])
+    started = []
+
+    class FakeThread:
+        def __init__(self, *args, **kwargs):
+            started.append(kwargs.get("name"))
+
+        def start(self):
+            started.append("started")
+
+    monkeypatch.setattr(adapter.threading, "Thread", FakeThread)
+
+    result = adapter.start_dify_agent_chat_catalog_sync()
+
+    assert result == {"enabled": True, "started": False, "reason": "waiting_for_app_factory"}
+    assert started == []
+
+    class FakeApp:
+        def app_context(self):
+            return self
+
+    adapter.register_dify_flask_app(FakeApp())
+    assert started == ["agentguard-dify-agent-chat-catalog-sync", "started"]
 
 
 def test_agent_chat_catalog_sync_reports_enabled_tools(monkeypatch):
@@ -317,7 +420,116 @@ def test_agent_chat_catalog_sync_reports_enabled_tools(monkeypatch):
     assert synced[0][1][0]["input_params"] == ["year", "month", "day"]
 
 
-def test_agent_chat_catalog_sync_creates_app_context_when_needed(monkeypatch):
+def test_agent_chat_catalog_sync_skips_unchanged_tools(monkeypatch):
+    adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+    app = types.SimpleNamespace(
+        id="app-1",
+        tenant_id="tenant-1",
+        app_model_config_id="config-1",
+        app_model_config=types.SimpleNamespace(
+            agent_mode_dict={
+                "enabled": True,
+                "tools": [
+                    {
+                        "enabled": True,
+                        "provider_id": "time",
+                        "provider_type": "builtin",
+                        "tool_name": "weekday",
+                        "tool_parameters": {"year": None},
+                    }
+                ],
+            }
+        ),
+    )
+    remote_calls = []
+
+    class FakeRemote:
+        enabled = True
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def register_session(self, context):
+            remote_calls.append(("register", context.agent_id))
+
+        def sync_tools(self, context, tools):
+            remote_calls.append(("sync", context.agent_id, len(tools)))
+            return {"tool_count": len(tools)}
+
+    monkeypatch.setattr(adapter, "RemoteGuardClient", FakeRemote)
+
+    first = adapter._sync_app_tool_catalog(app)
+    second = adapter._sync_app_tool_catalog(app)
+
+    assert first["tool_count"] == 1
+    assert second["skipped"] is True
+    assert remote_calls == [
+        ("register", "dify-agent-chat:app-1"),
+        ("sync", "dify-agent-chat:app-1", 1),
+    ]
+
+
+def test_agent_chat_catalog_sync_sends_updates_when_tools_change(monkeypatch):
+    adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+    agent_mode = {
+        "enabled": True,
+        "tools": [
+            {
+                "enabled": True,
+                "provider_id": "time",
+                "provider_type": "builtin",
+                "tool_name": "weekday",
+                "tool_parameters": {"year": None},
+            }
+        ],
+    }
+    app = types.SimpleNamespace(
+        id="app-1",
+        tenant_id="tenant-1",
+        app_model_config_id="config-1",
+        app_model_config=types.SimpleNamespace(agent_mode_dict=agent_mode),
+    )
+    synced_tools = []
+
+    class FakeRemote:
+        enabled = True
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def register_session(self, context):
+            return {"status": "ok"}
+
+        def sync_tools(self, context, tools):
+            synced_tools.append([tool["name"] for tool in tools])
+            return {"tool_count": len(tools)}
+
+    monkeypatch.setattr(adapter, "RemoteGuardClient", FakeRemote)
+
+    adapter._sync_app_tool_catalog(app)
+    agent_mode["tools"].append(
+        {
+            "enabled": True,
+            "provider_id": "time",
+            "provider_type": "builtin",
+            "tool_name": "timestamp_to_localtime",
+            "tool_parameters": {"timestamp": None},
+        }
+    )
+    adapter._sync_app_tool_catalog(app)
+    agent_mode["tools"][0]["enabled"] = False
+    adapter._sync_app_tool_catalog(app)
+
+    assert synced_tools == [
+        ["weekday"],
+        ["weekday", "timestamp_to_localtime"],
+        ["timestamp_to_localtime"],
+    ]
+
+
+def test_agent_chat_catalog_sync_uses_registered_app_context(monkeypatch):
     adapter = _fresh_adapter(monkeypatch)
     calls = []
 
@@ -333,7 +545,7 @@ def test_agent_chat_catalog_sync_creates_app_context_when_needed(monkeypatch):
         def app_context(self):
             return FakeAppContext()
 
-    monkeypatch.setattr(adapter, "_dify_flask_app", lambda: FakeApp())
+    adapter.register_dify_flask_app(FakeApp())
     monkeypatch.setattr(adapter, "_sync_published_agent_catalog_once", lambda: {"app_count": 0, "synced": []})
 
     result = adapter._sync_published_agent_catalog_with_context()

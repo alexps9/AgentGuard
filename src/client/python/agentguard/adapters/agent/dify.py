@@ -8,13 +8,25 @@ from __future__ import annotations
 
 import contextvars
 import functools
+import hashlib
+import json
 import os
+import sys
+import threading
+import time
 from collections.abc import AsyncIterator, Generator, Iterable
 from contextlib import asynccontextmanager
 from typing import Any
 
+from agentguard.adapters.agent.dify_flask import (
+    get_dify_flask_app,
+    on_dify_flask_app_ready,
+    register_dify_flask_app as _register_shared_dify_flask_app,
+)
 from agentguard.schemas import events as ev
+from agentguard.schemas.context import RuntimeContext
 from agentguard.schemas.decisions import DecisionType, GuardDecision
+from agentguard.u_guard.remote_client import RemoteGuardClient
 from agentguard.utils.errors import AdapterError
 from agentguard.utils.json import safe_dumps, safe_loads
 
@@ -29,6 +41,10 @@ _current_metadata: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextV
     "agentguard_dify_metadata",
     default={},
 )
+_catalog_sync_started = False
+_catalog_sync_lock = threading.Lock()
+_catalog_fingerprints: dict[str, str] = {}
+_catalog_fingerprints_lock = threading.Lock()
 
 
 def install_dify_adapter() -> dict[str, Any]:
@@ -43,6 +59,8 @@ def install_dify_adapter() -> dict[str, Any]:
     workflow_status = _install_workflow_api_hooks()
     legacy_status = _install_legacy_api_hooks()
     v2_status = _install_agent_v2_hooks()
+    publish_status = _install_publish_catalog_hooks()
+    catalog_sync = start_dify_workflow_catalog_sync()
     return {
         "enabled": True,
         "patched": bool(
@@ -54,8 +72,74 @@ def install_dify_adapter() -> dict[str, Any]:
             "workflow_api": workflow_status,
             "legacy_api": legacy_status,
             "agent_v2": v2_status,
+            "publish_catalog": publish_status,
         },
+        "catalog_sync": catalog_sync,
     }
+
+
+def start_dify_workflow_catalog_sync() -> dict[str, Any]:
+    if not _catalog_sync_enabled():
+        return {"enabled": False, "reason": "disabled"}
+    if not os.getenv("AGENTGUARD_SERVER_URL"):
+        return {"enabled": False, "reason": "server_url_missing"}
+    if not _catalog_sync_process_allowed():
+        return {"enabled": False, "reason": "process_not_allowed"}
+
+    global _catalog_sync_started
+    with _catalog_sync_lock:
+        if _catalog_sync_started:
+            return {"enabled": True, "started": False, "reason": "already_started"}
+        _catalog_sync_started = True
+
+    if _dify_flask_app() is None:
+        on_dify_flask_app_ready(lambda _app: _start_workflow_catalog_sync_thread())
+        return {"enabled": True, "started": False, "reason": "waiting_for_app_factory"}
+
+    _start_workflow_catalog_sync_thread()
+    return {"enabled": True, "started": True}
+
+
+def _start_workflow_catalog_sync_thread() -> None:
+    thread = threading.Thread(
+        target=_workflow_catalog_sync_loop,
+        name="agentguard-dify-workflow-catalog-sync",
+        daemon=True,
+    )
+    thread.start()
+
+
+def _install_publish_catalog_hooks() -> dict[str, Any]:
+    patched: dict[str, bool] = {}
+    try:
+        from services.workflow_service import WorkflowService  # type: ignore
+
+        patched["workflow_service"] = _patch_workflow_publish_service(WorkflowService)
+    except Exception:
+        patched["workflow_service"] = False
+    try:
+        from services.rag_pipeline.rag_pipeline import RagPipelineService  # type: ignore
+
+        patched["rag_pipeline_service"] = _patch_workflow_publish_service(RagPipelineService)
+    except Exception:
+        patched["rag_pipeline_service"] = False
+    return {"patched": any(patched.values()), "details": patched}
+
+
+def _patch_workflow_publish_service(service_cls: Any) -> bool:
+    original = getattr(service_cls, "publish_workflow", None)
+    if not callable(original) or _is_patched(original):
+        return False
+
+    @functools.wraps(original)
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        workflow = original(self, *args, **kwargs)
+        _schedule_published_workflow_catalog_sync(workflow)
+        return workflow
+
+    _mark_patched(wrapper, original)
+    setattr(service_cls, "publish_workflow", wrapper)
+    return True
 
 
 def _install_agent_v2_hooks() -> dict[str, Any]:
@@ -1930,10 +2014,9 @@ def _session_id(metadata: dict[str, Any]) -> str:
 
 def _agent_id(metadata: dict[str, Any]) -> str:
     if _optional_text(metadata.get("dify_runtime")) == "workflow_api":
-        parts = [
-            _optional_text(metadata.get("app_id")),
-            _optional_text(metadata.get("workflow_id")),
-        ]
+        app_id = _optional_text(metadata.get("app_id"))
+        if app_id:
+            return _workflow_agent_id(app_id)
     else:
         parts = [
             _optional_text(metadata.get("app_id")),
@@ -2039,6 +2122,653 @@ def _is_generator_like(value: Any) -> bool:
     return isinstance(value, Iterable) and not isinstance(value, str | bytes | dict | list | tuple)
 
 
+def _workflow_catalog_sync_loop() -> None:
+    initial_delay = _env_float("AGENTGUARD_DIFY_CATALOG_INITIAL_DELAY_S", 5.0)
+    interval = _env_float("AGENTGUARD_DIFY_CATALOG_SYNC_INTERVAL_S", 0.0)
+    if initial_delay > 0:
+        time.sleep(initial_delay)
+    try:
+        _sync_published_workflow_catalog_with_context()
+    except Exception:
+        pass
+    while interval > 0:
+        time.sleep(interval)
+        try:
+            _sync_published_workflow_catalog_with_context()
+        except Exception:
+            pass
+
+
+def _sync_published_workflow_catalog_with_context() -> dict[str, Any]:
+    try:
+        from flask import has_app_context  # type: ignore
+
+        if has_app_context():
+            return _sync_published_workflow_catalog_once()
+    except Exception:
+        pass
+
+    app = _dify_flask_app()
+    if app is None:
+        return {"app_count": 0, "synced": [], "reason": "app_context_unavailable"}
+    with app.app_context():
+        return _sync_published_workflow_catalog_once()
+
+
+def _dify_flask_app() -> Any | None:
+    return get_dify_flask_app()
+
+
+def register_dify_flask_app(app: Any) -> bool:
+    return _register_shared_dify_flask_app(app)
+
+
+def _schedule_published_workflow_catalog_sync(workflow: Any) -> None:
+    if not _catalog_sync_enabled() or not os.getenv("AGENTGUARD_SERVER_URL"):
+        return
+    workflow_id = _optional_text(getattr(workflow, "id", None))
+    if not workflow_id:
+        return
+
+    def _worker() -> None:
+        time.sleep(_env_float("AGENTGUARD_DIFY_PUBLISH_SYNC_DELAY_S", 0.5))
+        try:
+            _sync_published_workflow_by_id_with_context(workflow_id)
+        except Exception:
+            pass
+
+    threading.Thread(
+        target=_worker,
+        name=f"agentguard-dify-publish-catalog-sync-{workflow_id}",
+        daemon=True,
+    ).start()
+
+
+def _sync_published_workflow_by_id_with_context(workflow_id: str) -> dict[str, Any]:
+    app = _dify_flask_app()
+    if app is None:
+        return {"synced": [], "reason": "app_context_unavailable"}
+    with app.app_context():
+        return _sync_published_workflow_by_id_once(workflow_id)
+
+
+def _sync_published_workflow_by_id_once(workflow_id: str) -> dict[str, Any]:
+    pair = _published_workflow_app_by_workflow_id(workflow_id)
+    if pair is None:
+        return {"synced": [], "reason": "workflow_not_found"}
+    result = _sync_workflow_tool_catalog(pair[0], pair[1])
+    return {"synced": [result] if result is not None else []}
+
+
+def _sync_published_workflow_catalog_once() -> dict[str, Any]:
+    pairs = _published_workflow_apps()
+    synced: list[dict[str, Any]] = []
+    for app, workflow in pairs:
+        result = _sync_workflow_tool_catalog(app, workflow)
+        if result is not None:
+            synced.append(result)
+    return {"app_count": len(pairs), "synced": synced}
+
+
+def _published_workflow_apps() -> list[tuple[Any, Any]]:
+    try:
+        from extensions.ext_database import db  # type: ignore
+        from models.model import App, AppMode  # type: ignore
+        from models.workflow import Workflow  # type: ignore
+        from sqlalchemy import select  # type: ignore
+    except Exception:
+        return []
+
+    modes = []
+    for name in ("WORKFLOW", "ADVANCED_CHAT"):
+        mode = getattr(AppMode, name, None)
+        modes.append(getattr(mode, "value", mode) or name.lower())
+
+    stmt = (
+        select(App, Workflow)
+        .join(Workflow, Workflow.id == App.workflow_id)
+        .where(App.mode.in_(modes))
+    )
+    app_ids = _env_csv("AGENTGUARD_DIFY_APP_IDS")
+    if app_ids:
+        stmt = stmt.where(App.id.in_(app_ids))
+    try:
+        return list(db.session.execute(stmt).all())
+    except Exception:
+        return []
+
+
+def _published_workflow_app_by_workflow_id(workflow_id: str) -> tuple[Any, Any] | None:
+    try:
+        from extensions.ext_database import db  # type: ignore
+        from models.model import App, AppMode  # type: ignore
+        from models.workflow import Workflow  # type: ignore
+        from sqlalchemy import select  # type: ignore
+    except Exception:
+        return None
+
+    modes = []
+    for name in ("WORKFLOW", "ADVANCED_CHAT"):
+        mode = getattr(AppMode, name, None)
+        modes.append(getattr(mode, "value", mode) or name.lower())
+
+    stmt = (
+        select(App, Workflow)
+        .join(Workflow, Workflow.id == App.workflow_id)
+        .where(Workflow.id == workflow_id, App.mode.in_(modes))
+    )
+    try:
+        row = db.session.execute(stmt).first()
+    except Exception:
+        return None
+    return row if row is not None else None
+
+
+def _sync_workflow_tool_catalog(app: Any, workflow: Any) -> dict[str, Any] | None:
+    app_id = _optional_text(getattr(app, "id", None))
+    workflow_id = _optional_text(getattr(workflow, "id", None))
+    if not app_id or not workflow_id or not _app_allowed(app_id):
+        return None
+    tools = _workflow_catalog_tools(app, workflow)
+    return _sync_workflow_tools_to_agentguard(app, workflow, tools)
+
+
+def _workflow_catalog_tools(app: Any, workflow: Any) -> list[dict[str, Any]]:
+    graph = _workflow_graph_dict(workflow)
+    if not graph:
+        return []
+
+    tools: list[dict[str, Any]] = []
+    nodes = graph.get("nodes")
+    if isinstance(nodes, list):
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            tools.extend(_catalog_tools_from_workflow_node(node))
+
+    tools.extend(_catalog_tools_from_agent_v2_bindings(app, workflow, graph))
+    return _dedupe_catalog_tools(tools)
+
+
+def _workflow_graph_dict(workflow: Any) -> dict[str, Any]:
+    graph = getattr(workflow, "graph_dict", None)
+    if isinstance(graph, dict):
+        return graph
+    raw = getattr(workflow, "graph", None)
+    parsed = safe_loads(raw, fallback={}) if isinstance(raw, str) else raw
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _catalog_tools_from_workflow_node(node: dict[str, Any]) -> list[dict[str, Any]]:
+    data = node.get("data")
+    if not isinstance(data, dict):
+        return []
+    node_type = str(data.get("type") or "").strip()
+    if node_type == "tool":
+        tool = _catalog_tool_from_workflow_tool_node(node, data)
+        return [tool] if tool is not None else []
+    if node_type != "agent":
+        return []
+    return _catalog_tools_from_legacy_agent_node(node, data)
+
+
+def _catalog_tool_from_workflow_tool_node(node: dict[str, Any], data: dict[str, Any]) -> dict[str, Any] | None:
+    tool_name = _optional_text(data.get("tool_name"))
+    if not tool_name:
+        return None
+    provider_id = _optional_text(data.get("provider_id") or data.get("provider_name") or data.get("provider"))
+    provider_name = _optional_text(data.get("provider_name") or provider_id)
+    provider_type = _optional_text(data.get("provider_type") or _nested_value(data, ("tool_configurations", "provider_type")))
+    node_id = _optional_text(node.get("id"))
+    label = _optional_text(data.get("tool_label") or data.get("title"))
+    configurations = data.get("tool_configurations")
+    parameters = configurations if isinstance(configurations, dict) else data.get("tool_parameters")
+    return _catalog_tool_payload(
+        name=tool_name,
+        description=label or tool_name,
+        provider_id=provider_id,
+        provider_name=provider_name,
+        provider_type=provider_type,
+        node_id=node_id,
+        node_type="tool",
+        node_title=_optional_text(data.get("title")),
+        input_params=_config_required_args(parameters),
+        metadata={
+            "source": "dify_workflow_catalog",
+            "workflow_node_kind": "tool",
+            "tool_label": label,
+        },
+    )
+
+
+def _catalog_tools_from_legacy_agent_node(node: dict[str, Any], data: dict[str, Any]) -> list[dict[str, Any]]:
+    agent_parameters = data.get("agent_parameters")
+    if not isinstance(agent_parameters, dict):
+        return []
+    tools: list[dict[str, Any]] = []
+    for value in agent_parameters.values():
+        raw = value.get("value") if isinstance(value, dict) else value
+        if not isinstance(raw, list):
+            continue
+        for entry in raw:
+            if isinstance(entry, dict):
+                payload = _catalog_tool_from_legacy_agent_tool(node, data, entry)
+                if payload is not None:
+                    tools.append(payload)
+    return tools
+
+
+def _catalog_tool_from_legacy_agent_tool(
+    node: dict[str, Any],
+    data: dict[str, Any],
+    tool_config: dict[str, Any],
+) -> dict[str, Any] | None:
+    tool_name = _optional_text(tool_config.get("tool_name") or tool_config.get("name"))
+    if not tool_name:
+        return None
+    provider_id = _optional_text(tool_config.get("provider_id") or tool_config.get("provider_name") or tool_config.get("provider"))
+    provider_name = _optional_text(tool_config.get("provider_name") or provider_id)
+    provider_type = _optional_text(tool_config.get("type") or tool_config.get("provider_type"))
+    parameters = tool_config.get("parameters")
+    settings = tool_config.get("settings")
+    merged_params: dict[str, Any] = {}
+    if isinstance(parameters, dict):
+        merged_params.update(parameters)
+    if isinstance(settings, dict):
+        merged_params.update(settings)
+    extra = tool_config.get("extra") if isinstance(tool_config.get("extra"), dict) else {}
+    description = _optional_text(extra.get("description")) or _optional_text(tool_config.get("tool_label")) or tool_name
+    return _catalog_tool_payload(
+        name=tool_name,
+        description=description,
+        provider_id=provider_id,
+        provider_name=provider_name,
+        provider_type=provider_type,
+        node_id=_optional_text(node.get("id")),
+        node_type="agent",
+        node_title=_optional_text(data.get("title")),
+        input_params=_config_required_args(merged_params),
+        metadata={
+            "source": "dify_workflow_catalog",
+            "workflow_node_kind": "legacy_agent",
+            "agent_strategy": _optional_text(data.get("agent_strategy_name")),
+        },
+    )
+
+
+def _catalog_tools_from_agent_v2_bindings(app: Any, workflow: Any, graph: dict[str, Any]) -> list[dict[str, Any]]:
+    node_ids = {
+        str(node.get("id"))
+        for node in graph.get("nodes", [])
+        if isinstance(node, dict)
+        and isinstance(node.get("data"), dict)
+        and node["data"].get("type") == "agent"
+        and node["data"].get("version") == "2"
+    }
+    if not node_ids:
+        return []
+    try:
+        from extensions.ext_database import db  # type: ignore
+        from models.agent import AgentConfigSnapshot, WorkflowAgentNodeBinding  # type: ignore
+        from sqlalchemy import select  # type: ignore
+    except Exception:
+        return []
+
+    try:
+        bindings = list(
+            db.session.scalars(
+                select(WorkflowAgentNodeBinding).where(
+                    WorkflowAgentNodeBinding.tenant_id == getattr(workflow, "tenant_id", None),
+                    WorkflowAgentNodeBinding.app_id == getattr(app, "id", None),
+                    WorkflowAgentNodeBinding.workflow_id == getattr(workflow, "id", None),
+                    WorkflowAgentNodeBinding.workflow_version == getattr(workflow, "version", None),
+                    WorkflowAgentNodeBinding.node_id.in_(node_ids),
+                )
+            ).all()
+        )
+    except Exception:
+        return []
+    snapshot_ids = {
+        _optional_text(getattr(binding, "current_snapshot_id", None))
+        for binding in bindings
+        if _optional_text(getattr(binding, "current_snapshot_id", None))
+    }
+    if not snapshot_ids:
+        return []
+    try:
+        snapshots = {
+            str(snapshot.id): snapshot
+            for snapshot in db.session.scalars(
+                select(AgentConfigSnapshot).where(AgentConfigSnapshot.id.in_(snapshot_ids))
+            ).all()
+        }
+    except Exception:
+        return []
+
+    node_data_by_id = {
+        str(node.get("id")): node.get("data")
+        for node in graph.get("nodes", [])
+        if isinstance(node, dict)
+    }
+    tools: list[dict[str, Any]] = []
+    for binding in bindings:
+        node_id = _optional_text(getattr(binding, "node_id", None))
+        snapshot = snapshots.get(str(getattr(binding, "current_snapshot_id", "")))
+        if snapshot is None:
+            continue
+        data = node_data_by_id.get(str(node_id)) if node_id else {}
+        if not isinstance(data, dict):
+            data = {}
+        tools.extend(_catalog_tools_from_agent_v2_snapshot(snapshot, node_id=node_id, node_data=data))
+    return tools
+
+
+def _catalog_tools_from_agent_v2_snapshot(
+    snapshot: Any,
+    *,
+    node_id: str | None,
+    node_data: dict[str, Any],
+) -> list[dict[str, Any]]:
+    config = _normalize_value(
+        getattr(snapshot, "config_snapshot_dict", None)
+        or getattr(snapshot, "config_snapshot", None)
+    )
+    if not isinstance(config, dict):
+        return []
+    tool_config = config.get("tools")
+    if not isinstance(tool_config, dict):
+        return []
+    tools: list[dict[str, Any]] = []
+    for entry in tool_config.get("dify_tools") or []:
+        if isinstance(entry, dict):
+            payload = _catalog_tool_from_agent_v2_dify_tool(entry, node_id=node_id, node_data=node_data)
+            if payload is not None:
+                tools.append(payload)
+    for entry in tool_config.get("cli_tools") or []:
+        if isinstance(entry, dict):
+            payload = _catalog_tool_from_agent_v2_cli_tool(entry, node_id=node_id, node_data=node_data)
+            if payload is not None:
+                tools.append(payload)
+    return tools
+
+
+def _catalog_tool_from_agent_v2_dify_tool(
+    entry: dict[str, Any],
+    *,
+    node_id: str | None,
+    node_data: dict[str, Any],
+) -> dict[str, Any] | None:
+    if entry.get("enabled") is False:
+        return None
+    tool_name = _optional_text(entry.get("tool_name"))
+    if not tool_name:
+        return None
+    provider_id = _optional_text(
+        entry.get("provider_id")
+        or "/".join(str(part) for part in (entry.get("plugin_id"), entry.get("provider")) if part)
+    )
+    provider_name = _optional_text(entry.get("provider") or provider_id)
+    return _catalog_tool_payload(
+        name=tool_name,
+        description=_optional_text(entry.get("name")) or tool_name,
+        provider_id=provider_id,
+        provider_name=provider_name,
+        provider_type="plugin",
+        node_id=node_id,
+        node_type="agent",
+        node_title=_optional_text(node_data.get("title")),
+        input_params=_config_required_args(entry.get("runtime_parameters")),
+        metadata={
+            "source": "dify_workflow_catalog",
+            "workflow_node_kind": "agent_v2",
+            "agent_tool_kind": "dify_tool",
+            "plugin_id": _optional_text(entry.get("plugin_id")),
+        },
+    )
+
+
+def _catalog_tool_from_agent_v2_cli_tool(
+    entry: dict[str, Any],
+    *,
+    node_id: str | None,
+    node_data: dict[str, Any],
+) -> dict[str, Any] | None:
+    if entry.get("enabled") is False:
+        return None
+    tool_name = _optional_text(entry.get("name") or entry.get("tool_name") or entry.get("label"))
+    if not tool_name:
+        return None
+    schema = entry.get("input_schema") if isinstance(entry.get("input_schema"), dict) else {}
+    return _catalog_tool_payload(
+        name=tool_name,
+        description=_optional_text(entry.get("description")) or tool_name,
+        provider_id="agent_cli",
+        provider_name="agent_cli",
+        provider_type="cli",
+        node_id=node_id,
+        node_type="agent",
+        node_title=_optional_text(node_data.get("title")),
+        input_params=_required_args_from_schema(schema, entry.get("parameters")),
+        metadata={
+            "source": "dify_workflow_catalog",
+            "workflow_node_kind": "agent_v2",
+            "agent_tool_kind": "cli_tool",
+        },
+    )
+
+
+def _catalog_tool_payload(
+    *,
+    name: str,
+    description: str,
+    provider_id: str | None,
+    provider_name: str | None,
+    provider_type: str | None,
+    node_id: str | None,
+    node_type: str | None,
+    node_title: str | None,
+    input_params: list[str],
+    metadata: dict[str, Any],
+) -> dict[str, Any]:
+    tags = ["dify_tool", "dify_workflow_tool"]
+    for tag in (provider_type, provider_id, provider_name):
+        if tag and tag not in tags:
+            tags.append(tag)
+    merged_metadata = {
+        **{key: value for key, value in metadata.items() if value is not None},
+        "provider_id": provider_id,
+        "provider_name": provider_name,
+        "provider_type": provider_type,
+        "node_id": node_id,
+        "node_type": node_type,
+        "node_title": node_title,
+    }
+    return {
+        "name": name,
+        "description": description or name,
+        "input_params": list(input_params),
+        "capabilities": tags,
+        "labels": {
+            "boundary": "internal",
+            "sensitivity": "low",
+            "integrity": "trusted",
+            "tags": tags,
+        },
+        "metadata": {key: value for key, value in merged_metadata.items() if value not in (None, "")},
+    }
+
+
+def _dedupe_catalog_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_name: dict[str, dict[str, Any]] = {}
+    for tool in tools:
+        name = _optional_text(tool.get("name"))
+        if not name:
+            continue
+        existing = by_name.get(name)
+        if existing is None:
+            by_name[name] = dict(tool)
+            continue
+        metadata = dict(existing.get("metadata") or {})
+        node_ids = set(metadata.get("workflow_node_ids") or [])
+        current_node = _optional_text(metadata.get("node_id"))
+        incoming_node = _optional_text((tool.get("metadata") or {}).get("node_id"))
+        for node_id in (current_node, incoming_node):
+            if node_id:
+                node_ids.add(node_id)
+        if node_ids:
+            metadata["workflow_node_ids"] = sorted(node_ids)
+        existing["metadata"] = metadata
+        existing_params = list(existing.get("input_params") or [])
+        for param in tool.get("input_params") or []:
+            if param not in existing_params:
+                existing_params.append(param)
+        existing["input_params"] = existing_params
+    return list(by_name.values())
+
+
+def _sync_workflow_tools_to_agentguard(app: Any, workflow: Any, tools: list[dict[str, Any]]) -> dict[str, Any] | None:
+    app_id = _optional_text(getattr(app, "id", None))
+    workflow_id = _optional_text(getattr(workflow, "id", None))
+    if not app_id or not workflow_id:
+        return None
+    agent_id = _workflow_agent_id(app_id)
+    version = _optional_text(getattr(workflow, "version", None))
+    fingerprint_key = f"workflow:{agent_id}"
+    fingerprint = _catalog_fingerprint(tools, version)
+    if _catalog_fingerprint_unchanged(fingerprint_key, fingerprint):
+        return {
+            "app_id": app_id,
+            "workflow_id": workflow_id,
+            "agent_id": agent_id,
+            "tool_count": len(tools),
+            "skipped": True,
+            "reason": "unchanged",
+        }
+    session_id = f"dify-workflow-catalog:{app_id}:{workflow_id}:{version or 'published'}"
+    session_key = _catalog_session_key(app_id, workflow_id, version)
+    context = RuntimeContext(
+        session_id=session_id,
+        agent_id=agent_id,
+        user_id=None,
+        environment=os.getenv("AGENTGUARD_ENVIRONMENT") or "dify",
+        metadata={
+            "adapter": "dify",
+            "dify_runtime": "workflow_api",
+            "catalog_sync": True,
+            "app_id": app_id,
+            "tenant_id": _optional_text(getattr(app, "tenant_id", None) or getattr(workflow, "tenant_id", None)),
+            "workflow_id": workflow_id,
+            "workflow_version": version,
+            "workflow_type": _optional_text(getattr(workflow, "type", None)),
+            "client_session_key": session_key,
+        },
+    )
+    remote = RemoteGuardClient(
+        os.getenv("AGENTGUARD_SERVER_URL") or None,
+        api_key=os.getenv("AGENTGUARD_API_KEY") or None,
+        session_id=session_id,
+        agent_id=agent_id,
+        session_key=session_key,
+        timeout_s=_env_float("AGENTGUARD_DIFY_CATALOG_SYNC_TIMEOUT_S", 5.0),
+        retries=int(_env_float("AGENTGUARD_DIFY_CATALOG_SYNC_RETRIES", 1.0)),
+    )
+    if not remote.enabled:
+        return None
+    remote.register_session(context)
+    result = remote.sync_tools(context, tools)
+    _remember_catalog_fingerprint(fingerprint_key, fingerprint)
+    return {
+        "app_id": app_id,
+        "workflow_id": workflow_id,
+        "agent_id": agent_id,
+        "tool_count": result.get("tool_count", len(tools)),
+    }
+
+
+def _workflow_agent_id(app_id: str) -> str:
+    return f"dify-workflow:{app_id}"
+
+
+def _nested_value(value: dict[str, Any], path: tuple[str, ...]) -> Any:
+    current: Any = value
+    for part in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(part)
+    return current
+
+
+def _config_required_args(config: Any) -> list[str]:
+    if not isinstance(config, dict):
+        return []
+    required: list[str] = []
+    for key, value in config.items():
+        if value is None:
+            required.append(str(key))
+            continue
+        if isinstance(value, dict):
+            value_type = str(value.get("type") or "").strip()
+            if value.get("required") is True or value_type in {"variable", "mixed"}:
+                required.append(str(key))
+    return required
+
+
+def _catalog_session_key(app_id: str, workflow_id: str, version: str | None = None) -> str:
+    seed = os.getenv("AGENTGUARD_DIFY_CATALOG_SESSION_KEY")
+    if seed:
+        return seed
+    return f"sk-dify-workflow-catalog-{app_id}-{workflow_id}-{version or 'published'}"
+
+
+def _catalog_fingerprint(tools: list[dict[str, Any]], version: str | None = None) -> str:
+    payload = {"version": version, "tools": tools}
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _catalog_fingerprint_unchanged(key: str, fingerprint: str) -> bool:
+    with _catalog_fingerprints_lock:
+        return _catalog_fingerprints.get(key) == fingerprint
+
+
+def _remember_catalog_fingerprint(key: str, fingerprint: str) -> None:
+    with _catalog_fingerprints_lock:
+        _catalog_fingerprints[key] = fingerprint
+
+
+def _catalog_sync_enabled() -> bool:
+    specific = os.getenv("AGENTGUARD_DIFY_CATALOG_SYNC_ENABLED")
+    if specific is not None:
+        return specific.strip().lower() in {"1", "true", "yes", "on", "enabled"}
+    return _env_enabled()
+
+
+def _catalog_sync_process_allowed() -> bool:
+    role = (os.getenv("AGENTGUARD_DIFY_CATALOG_SYNC_PROCESS") or "api").strip().lower()
+    if role in {"all", "*"}:
+        return True
+    argv = " ".join(sys.argv).lower()
+    if role == "api":
+        return "gunicorn" in argv and "app:socketio_app" in argv
+    if role == "worker":
+        return "celery" in argv
+    return role in argv
+
+
+def _app_allowed(app_id: Any) -> bool:
+    app_ids = _env_csv("AGENTGUARD_DIFY_APP_IDS")
+    if not app_ids:
+        return True
+    return str(app_id or "").strip() in app_ids
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
 def _env_enabled() -> bool:
     value = os.getenv("AGENTGUARD_ENABLED")
     if value is None:
@@ -2142,4 +2872,4 @@ def _deepcopy(value: Any) -> Any:
         return value
 
 
-__all__ = ["install_dify_adapter"]
+__all__ = ["install_dify_adapter", "register_dify_flask_app"]

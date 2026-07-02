@@ -141,6 +141,14 @@ import logging
 logger = logging.getLogger("agentguard.dify")
 
 try:
+    from agentguard.adapters.agent.dify_bootstrap import install_dify_app_factory_capture
+
+    status = install_dify_app_factory_capture()
+    logger.warning("AgentGuard Dify app factory capture status: %s", status)
+except Exception:
+    logger.exception("AgentGuard Dify app factory capture installation failed")
+
+try:
     from agentguard.adapters.agent.dify_agent_chat import install_dify_agent_chat_adapter
 
     status = install_dify_agent_chat_adapter()

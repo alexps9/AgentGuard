@@ -9,12 +9,20 @@ from __future__ import annotations
 
 import contextvars
 import functools
+import hashlib
+import json
 import os
+import sys
 import threading
 import time
 from collections.abc import Generator
 from typing import Any
 
+from agentguard.adapters.agent.dify_flask import (
+    get_dify_flask_app,
+    on_dify_flask_app_ready,
+    register_dify_flask_app as _register_shared_dify_flask_app,
+)
 from agentguard.schemas import events as ev
 from agentguard.schemas.context import RuntimeContext
 from agentguard.schemas.decisions import DecisionType, GuardDecision
@@ -40,6 +48,10 @@ _current_tool_catalog: contextvars.ContextVar[list[str]] = contextvars.ContextVa
 )
 _catalog_sync_started = False
 _catalog_sync_lock = threading.Lock()
+_catalog_fingerprints: dict[str, str] = {}
+_catalog_fingerprints_lock = threading.Lock()
+_config_update_hook_installed = False
+_config_update_hook_lock = threading.Lock()
 
 
 def install_dify_agent_chat_adapter() -> dict[str, Any]:
@@ -72,8 +84,34 @@ def install_dify_agent_chat_adapter() -> dict[str, Any]:
         "model_invoke_llm": _patch_model_invoke_llm(ModelInstance),
         "tool_agent_invoke": _patch_tool_agent_invoke(ToolEngine),
     }
+    config_update_sync = install_dify_agent_chat_config_update_sync()
     catalog_sync = start_dify_agent_chat_catalog_sync()
-    return {"enabled": True, "patched": any(patched.values()), "details": patched, "catalog_sync": catalog_sync}
+    return {
+        "enabled": True,
+        "patched": any(patched.values()),
+        "details": patched,
+        "catalog_sync": catalog_sync,
+        "config_update_sync": config_update_sync,
+    }
+
+
+def install_dify_agent_chat_config_update_sync() -> dict[str, Any]:
+    if not _catalog_sync_enabled():
+        return {"enabled": False, "reason": "disabled"}
+    if not os.getenv("AGENTGUARD_SERVER_URL"):
+        return {"enabled": False, "reason": "server_url_missing"}
+
+    global _config_update_hook_installed
+    with _config_update_hook_lock:
+        if _config_update_hook_installed:
+            return {"enabled": True, "installed": False, "reason": "already_installed"}
+        try:
+            from events.app_event import app_model_config_was_updated  # type: ignore
+        except Exception as exc:
+            return {"enabled": True, "installed": False, "reason": "event_import_failed", "error": str(exc)}
+        app_model_config_was_updated.connect(_on_app_model_config_updated, weak=False)
+        _config_update_hook_installed = True
+    return {"enabled": True, "installed": True}
 
 
 def start_dify_agent_chat_catalog_sync() -> dict[str, Any]:
@@ -81,6 +119,8 @@ def start_dify_agent_chat_catalog_sync() -> dict[str, Any]:
         return {"enabled": False, "reason": "disabled"}
     if not os.getenv("AGENTGUARD_SERVER_URL"):
         return {"enabled": False, "reason": "server_url_missing"}
+    if not _catalog_sync_process_allowed():
+        return {"enabled": False, "reason": "process_not_allowed"}
 
     global _catalog_sync_started
     with _catalog_sync_lock:
@@ -88,13 +128,21 @@ def start_dify_agent_chat_catalog_sync() -> dict[str, Any]:
             return {"enabled": True, "started": False, "reason": "already_started"}
         _catalog_sync_started = True
 
+    if _dify_flask_app() is None:
+        on_dify_flask_app_ready(lambda _app: _start_catalog_sync_thread())
+        return {"enabled": True, "started": False, "reason": "waiting_for_app_factory"}
+
+    _start_catalog_sync_thread()
+    return {"enabled": True, "started": True}
+
+
+def _start_catalog_sync_thread() -> None:
     thread = threading.Thread(
         target=_catalog_sync_loop,
         name="agentguard-dify-agent-chat-catalog-sync",
         daemon=True,
     )
     thread.start()
-    return {"enabled": True, "started": True}
 
 
 def _patch_agent_chat_runner(runner_cls: Any) -> bool:
@@ -716,17 +764,19 @@ def _active_guard() -> Any | None:
 
 def _catalog_sync_loop() -> None:
     initial_delay = _env_float("AGENTGUARD_DIFY_CATALOG_INITIAL_DELAY_S", 5.0)
-    interval = _env_float("AGENTGUARD_DIFY_CATALOG_SYNC_INTERVAL_S", 30.0)
+    interval = _env_float("AGENTGUARD_DIFY_CATALOG_SYNC_INTERVAL_S", 0.0)
     if initial_delay > 0:
         time.sleep(initial_delay)
-    while True:
+    try:
+        _sync_published_agent_catalog_with_context()
+    except Exception:
+        pass
+    while interval > 0:
+        time.sleep(interval)
         try:
             _sync_published_agent_catalog_with_context()
         except Exception:
             pass
-        if interval <= 0:
-            return
-        time.sleep(interval)
 
 
 def _sync_published_agent_catalog_with_context() -> dict[str, Any]:
@@ -745,29 +795,69 @@ def _sync_published_agent_catalog_with_context() -> dict[str, Any]:
         return _sync_published_agent_catalog_once()
 
 
-_catalog_dify_app: Any | None = None
-
-
 def _dify_flask_app() -> Any | None:
-    global _catalog_dify_app
-    if _catalog_dify_app is not None:
-        return _catalog_dify_app
-    try:
-        from flask import current_app  # type: ignore
+    return get_dify_flask_app()
 
-        app = current_app._get_current_object()
-        _catalog_dify_app = app
-        return app
-    except Exception:
-        pass
-    try:
-        from app_factory import create_app  # type: ignore
 
-        _socketio_app, app = create_app()
-        _catalog_dify_app = app
-        return app
+def register_dify_flask_app(app: Any) -> bool:
+    return _register_shared_dify_flask_app(app)
+
+
+def _on_app_model_config_updated(sender: Any, **kwargs: Any) -> None:
+    app_model_config = kwargs.get("app_model_config")
+    if app_model_config is not None and not _app_model_config_has_agent_mode(app_model_config):
+        return
+    app_id = _optional_text(getattr(sender, "id", None) or kwargs.get("app_id"))
+    if not app_id or not _app_allowed(app_id):
+        return
+    _schedule_agent_chat_catalog_sync(app_id)
+
+
+def _app_model_config_has_agent_mode(app_model_config: Any) -> bool:
+    if isinstance(app_model_config, dict):
+        return app_model_config.get("agent_mode") is not None
+    raw = getattr(app_model_config, "agent_mode", None)
+    if raw not in (None, ""):
+        return True
+    try:
+        value = getattr(app_model_config, "agent_mode_dict", None)
     except Exception:
-        return None
+        return False
+    return bool(value)
+
+
+def _schedule_agent_chat_catalog_sync(app_id: str) -> None:
+    if not _catalog_sync_enabled() or not os.getenv("AGENTGUARD_SERVER_URL"):
+        return
+
+    def _worker() -> None:
+        time.sleep(_env_float("AGENTGUARD_DIFY_AGENT_CHAT_UPDATE_SYNC_DELAY_S", 0.5))
+        try:
+            _sync_agent_chat_app_by_id_with_context(app_id)
+        except Exception:
+            pass
+
+    threading.Thread(
+        target=_worker,
+        name=f"agentguard-dify-agent-chat-catalog-sync-{app_id}",
+        daemon=True,
+    ).start()
+
+
+def _sync_agent_chat_app_by_id_with_context(app_id: str) -> dict[str, Any]:
+    app = _dify_flask_app()
+    if app is None:
+        return {"synced": [], "reason": "app_context_unavailable"}
+    with app.app_context():
+        return _sync_agent_chat_app_by_id_once(app_id)
+
+
+def _sync_agent_chat_app_by_id_once(app_id: str) -> dict[str, Any]:
+    app = _agent_chat_app_by_id(app_id)
+    if app is None:
+        return {"synced": [], "reason": "app_not_found"}
+    result = _sync_app_tool_catalog(app)
+    return {"synced": [result] if result is not None else []}
 
 
 def _sync_published_agent_catalog_once() -> dict[str, Any]:
@@ -790,6 +880,15 @@ def _published_agent_chat_apps() -> list[Any]:
     if app_ids:
         stmt = stmt.where(App.id.in_(app_ids))
     return list(db.session.scalars(stmt).all())
+
+
+def _agent_chat_app_by_id(app_id: str) -> Any | None:
+    from extensions.ext_database import db  # type: ignore
+    from models.model import App, AppMode  # type: ignore
+    from sqlalchemy import select  # type: ignore
+
+    stmt = select(App).where(App.id == app_id, App.mode == AppMode.AGENT_CHAT.value)
+    return db.session.scalar(stmt)
 
 
 def _sync_app_tool_catalog(app: Any) -> dict[str, Any] | None:
@@ -873,6 +972,16 @@ def _sync_tools_to_agentguard(app: Any, tools: list[dict[str, Any]]) -> dict[str
         return None
     config_id = _optional_text(getattr(app, "app_model_config_id", None))
     agent_id = f"dify-agent-chat:{app_id}"
+    fingerprint_key = f"agent_chat:{agent_id}"
+    fingerprint = _catalog_fingerprint(tools, config_id)
+    if _catalog_fingerprint_unchanged(fingerprint_key, fingerprint):
+        return {
+            "app_id": app_id,
+            "agent_id": agent_id,
+            "tool_count": len(tools),
+            "skipped": True,
+            "reason": "unchanged",
+        }
     session_id = f"dify-agent-chat-catalog:{app_id}:{config_id or 'active'}"
     session_key = _catalog_session_key(app_id, config_id)
     context = RuntimeContext(
@@ -903,6 +1012,7 @@ def _sync_tools_to_agentguard(app: Any, tools: list[dict[str, Any]]) -> dict[str
         return None
     remote.register_session(context)
     result = remote.sync_tools(context, tools)
+    _remember_catalog_fingerprint(fingerprint_key, fingerprint)
     return {"app_id": app_id, "agent_id": agent_id, "tool_count": result.get("tool_count", len(tools))}
 
 
@@ -911,6 +1021,22 @@ def _catalog_session_key(app_id: str, config_id: str | None = None) -> str:
     if seed:
         return seed
     return f"sk-dify-catalog-{app_id}-{config_id or 'active'}"
+
+
+def _catalog_fingerprint(tools: list[dict[str, Any]], version: str | None = None) -> str:
+    payload = {"version": version, "tools": tools}
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _catalog_fingerprint_unchanged(key: str, fingerprint: str) -> bool:
+    with _catalog_fingerprints_lock:
+        return _catalog_fingerprints.get(key) == fingerprint
+
+
+def _remember_catalog_fingerprint(key: str, fingerprint: str) -> None:
+    with _catalog_fingerprints_lock:
+        _catalog_fingerprints[key] = fingerprint
 
 
 def _env_enabled() -> bool:
@@ -925,6 +1051,18 @@ def _catalog_sync_enabled() -> bool:
     if specific is not None:
         return specific.strip().lower() in {"1", "true", "yes", "on"}
     return _env_enabled()
+
+
+def _catalog_sync_process_allowed() -> bool:
+    role = (os.getenv("AGENTGUARD_DIFY_CATALOG_SYNC_PROCESS") or "api").strip().lower()
+    if role in {"all", "*"}:
+        return True
+    argv = " ".join(sys.argv).lower()
+    if role == "api":
+        return "gunicorn" in argv and "app:socketio_app" in argv
+    if role == "worker":
+        return "celery" in argv
+    return role in argv
 
 
 def _app_allowed(app_id: Any) -> bool:
@@ -1002,4 +1140,4 @@ class _suppress_exceptions:
         return True
 
 
-__all__ = ["install_dify_agent_chat_adapter"]
+__all__ = ["install_dify_agent_chat_adapter", "register_dify_flask_app"]

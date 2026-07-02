@@ -506,8 +506,229 @@ def _install_fake_legacy_dify_modules(monkeypatch):
     )
 
 
+def _install_fake_workflow_catalog_modules(monkeypatch):
+    extensions_pkg = types.ModuleType("extensions")
+    ext_database_mod = types.ModuleType("extensions.ext_database")
+    models_pkg = types.ModuleType("models")
+    model_mod = types.ModuleType("models.model")
+    workflow_mod = types.ModuleType("models.workflow")
+    agent_mod = types.ModuleType("models.agent")
+    sqlalchemy_mod = types.ModuleType("sqlalchemy")
+
+    class FakeColumn:
+        def __init__(self, name):
+            self.name = name
+
+        def __eq__(self, other):
+            return ("eq", self.name, other)
+
+        def in_(self, values):
+            return ("in", self.name, set(values))
+
+    class FakeSelect:
+        def __init__(self, *entities):
+            self.entities = entities
+
+        def join(self, *args, **kwargs):
+            return self
+
+        def where(self, *args, **kwargs):
+            return self
+
+    def select(*entities):
+        return FakeSelect(*entities)
+
+    class AppMode:
+        WORKFLOW = types.SimpleNamespace(value="workflow")
+        ADVANCED_CHAT = types.SimpleNamespace(value="advanced-chat")
+
+    class App:
+        id = FakeColumn("app_id")
+        mode = FakeColumn("mode")
+        workflow_id = FakeColumn("app_workflow_id")
+
+        def __init__(self, *, id, tenant_id, mode, workflow_id):
+            self.id = id
+            self.tenant_id = tenant_id
+            self.mode = mode
+            self.workflow_id = workflow_id
+
+    class Workflow:
+        id = FakeColumn("workflow_id")
+        tenant_id = FakeColumn("workflow_tenant_id")
+        app_id = FakeColumn("workflow_app_id")
+        version = FakeColumn("workflow_version")
+        VERSION_DRAFT = "draft"
+
+        def __init__(self, *, id, tenant_id, app_id, version, graph, type="workflow"):
+            self.id = id
+            self.tenant_id = tenant_id
+            self.app_id = app_id
+            self.version = version
+            self.graph = graph
+            self.type = type
+
+        @property
+        def graph_dict(self):
+            return self.graph
+
+    class WorkflowAgentNodeBinding:
+        tenant_id = FakeColumn("binding_tenant_id")
+        app_id = FakeColumn("binding_app_id")
+        workflow_id = FakeColumn("binding_workflow_id")
+        workflow_version = FakeColumn("binding_workflow_version")
+        node_id = FakeColumn("binding_node_id")
+
+        def __init__(self, *, node_id, current_snapshot_id):
+            self.node_id = node_id
+            self.current_snapshot_id = current_snapshot_id
+
+    class AgentConfigSnapshot:
+        id = FakeColumn("snapshot_id")
+
+        def __init__(self, *, id, config_snapshot):
+            self.id = id
+            self.config_snapshot = config_snapshot
+
+    app = App(id="app-1", tenant_id="tenant-1", mode="workflow", workflow_id="workflow-published")
+    graph = {
+        "nodes": [
+            {
+                "id": "tool-node-1",
+                "data": {
+                    "type": "tool",
+                    "title": "Weekday A",
+                    "provider_id": "time",
+                    "provider_name": "time",
+                    "provider_type": "builtin",
+                    "tool_name": "weekday",
+                    "tool_label": "Weekday",
+                    "tool_configurations": {
+                        "year": None,
+                        "month": {"type": "variable", "value": ["start", "month"]},
+                        "day": 1,
+                    },
+                },
+            },
+            {
+                "id": "agent-node-1",
+                "data": {
+                    "type": "agent",
+                    "title": "Legacy Agent",
+                    "agent_strategy_name": "function_calling",
+                    "agent_parameters": {
+                        "tools": {
+                            "type": "constant",
+                            "value": [
+                                {
+                                    "provider_name": "search",
+                                    "type": "builtin",
+                                    "tool_name": "web_search",
+                                    "parameters": {"query": None, "count": 5},
+                                    "extra": {"description": "Search the web"},
+                                }
+                            ],
+                        }
+                    },
+                },
+            },
+            {
+                "id": "agent-v2-node-1",
+                "data": {
+                    "type": "agent",
+                    "version": "2",
+                    "title": "Agent V2",
+                },
+            },
+        ]
+    }
+    workflow = Workflow(
+        id="workflow-published",
+        tenant_id="tenant-1",
+        app_id="app-1",
+        version="2026-07-02T00:00:00",
+        graph=graph,
+    )
+    binding = WorkflowAgentNodeBinding(node_id="agent-v2-node-1", current_snapshot_id="snapshot-1")
+    snapshot = AgentConfigSnapshot(
+        id="snapshot-1",
+        config_snapshot={
+            "tools": {
+                "dify_tools": [
+                    {
+                        "enabled": True,
+                        "plugin_id": "langgenius/google",
+                        "provider": "google",
+                        "provider_id": "langgenius/google/google",
+                        "tool_name": "google_search",
+                        "runtime_parameters": {"query": None},
+                    },
+                    {
+                        "enabled": False,
+                        "provider_id": "disabled",
+                        "tool_name": "disabled_tool",
+                    },
+                ],
+                "cli_tools": [
+                    {
+                        "enabled": True,
+                        "name": "local_script",
+                        "description": "Run local script",
+                        "input_schema": {"type": "object", "required": ["path"]},
+                    }
+                ],
+            }
+        },
+    )
+
+    class FakeScalarResult:
+        def __init__(self, values):
+            self._values = values
+
+        def all(self):
+            return self._values
+
+    class FakeExecuteResult(FakeScalarResult):
+        pass
+
+    class FakeSession:
+        def execute(self, stmt):
+            if stmt.entities == (App, Workflow):
+                return FakeExecuteResult([(app, workflow)])
+            return FakeExecuteResult([])
+
+        def scalars(self, stmt):
+            if stmt.entities == (WorkflowAgentNodeBinding,):
+                return FakeScalarResult([binding])
+            if stmt.entities == (AgentConfigSnapshot,):
+                return FakeScalarResult([snapshot])
+            return FakeScalarResult([])
+
+    ext_database_mod.db = types.SimpleNamespace(session=FakeSession())
+    model_mod.App = App
+    model_mod.AppMode = AppMode
+    workflow_mod.Workflow = Workflow
+    agent_mod.WorkflowAgentNodeBinding = WorkflowAgentNodeBinding
+    agent_mod.AgentConfigSnapshot = AgentConfigSnapshot
+    sqlalchemy_mod.select = select
+
+    modules = {
+        "extensions": extensions_pkg,
+        "extensions.ext_database": ext_database_mod,
+        "models": models_pkg,
+        "models.model": model_mod,
+        "models.workflow": workflow_mod,
+        "models.agent": agent_mod,
+        "sqlalchemy": sqlalchemy_mod,
+    }
+    for name, module in modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+    return types.SimpleNamespace(app=app, workflow=workflow, binding=binding, snapshot=snapshot)
+
+
 def _fresh_adapter(monkeypatch):
     monkeypatch.delenv("AGENTGUARD_ENABLED", raising=False)
+    monkeypatch.setenv("AGENTGUARD_DIFY_CATALOG_SYNC_ENABLED", "false")
     import agentguard.adapters.agent.dify as dify_adapter
 
     return importlib.reload(dify_adapter)
@@ -555,6 +776,45 @@ def test_install_dify_adapter_is_idempotent(monkeypatch):
     assert getattr(fake.runner_mod.AgentRunRunner._run_agent, "__agentguard_dify_patched__", False)
     assert getattr(fake.model_mod.DifyLLMAdapterModel.request, "__agentguard_dify_patched__", False)
     assert getattr(fake.tools_mod._build_pydantic_ai_tool, "__agentguard_dify_patched__", False)
+
+
+def test_workflow_catalog_sync_defaults_to_api_process(monkeypatch):
+    import agentguard.adapters.agent.dify_flask as dify_flask
+
+    importlib.reload(dify_flask)
+    dify_adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_DIFY_CATALOG_SYNC_ENABLED", "true")
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+    monkeypatch.setattr(dify_adapter.sys, "argv", ["celery", "-A", "app.celery"])
+
+    assert dify_adapter.start_dify_workflow_catalog_sync() == {
+        "enabled": False,
+        "reason": "process_not_allowed",
+    }
+
+    monkeypatch.setattr(dify_adapter.sys, "argv", ["gunicorn", "--bind", "0.0.0.0:5001", "app:socketio_app"])
+    started = []
+
+    class FakeThread:
+        def __init__(self, *args, **kwargs):
+            started.append(kwargs.get("name"))
+
+        def start(self):
+            started.append("started")
+
+    monkeypatch.setattr(dify_adapter.threading, "Thread", FakeThread)
+
+    result = dify_adapter.start_dify_workflow_catalog_sync()
+
+    assert result == {"enabled": True, "started": False, "reason": "waiting_for_app_factory"}
+    assert started == []
+
+    class FakeApp:
+        def app_context(self):
+            return self
+
+    dify_adapter.register_dify_flask_app(FakeApp())
+    assert started == ["agentguard-dify-workflow-catalog-sync", "started"]
 
 
 def test_dify_runner_llm_and_tool_hooks_emit_events(monkeypatch):
@@ -765,7 +1025,7 @@ def test_workflow_llm_node_emits_events(monkeypatch):
     assert len(created_guards) == 1
     guard = created_guards[0]
     assert guard.context.session_id == "workflow-llm-test"
-    assert dify_adapter._agent_id(guard.context.metadata) == "ce0aa322-1f3f-4ab9-8329-3af8588c7480:workflow-1"
+    assert dify_adapter._agent_id(guard.context.metadata) == "dify-workflow:ce0aa322-1f3f-4ab9-8329-3af8588c7480"
     assert _event_types(guard) == ["llm_input", "llm_output"]
     assert guard.trace.entries[0].event.metadata["dify_runtime"] == "workflow_api"
     assert guard.trace.entries[0].event.metadata["node_type"] == "llm"
@@ -792,9 +1052,221 @@ def test_workflow_make_guard_uses_workflow_run_session_and_stores_metadata(monke
     guard = dify_adapter._make_guard(metadata)
 
     assert guard.context.session_id == "workflow-run-1"
-    assert guard.context.agent_id == "app-1:workflow-1"
+    assert guard.context.agent_id == "dify-workflow:app-1"
     assert guard.context.metadata["node_execution_id"] == "node-exec-1"
     assert guard.context.metadata["node_type"] == "code"
+
+
+def test_workflow_catalog_sync_reports_published_workflow_tools(monkeypatch):
+    _install_fake_workflow_catalog_modules(monkeypatch)
+    dify_adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+
+    registered = []
+    synced = []
+
+    class FakeRemote:
+        def __init__(self, *args, **kwargs):
+            self.enabled = True
+
+        def register_session(self, context):
+            registered.append(context.to_dict())
+            return {"status": "ok"}
+
+        def sync_tools(self, context, tools):
+            synced.append((context.to_dict(), list(tools)))
+            return {"status": "ok", "tool_count": len(tools)}
+
+    monkeypatch.setattr(dify_adapter, "RemoteGuardClient", FakeRemote)
+
+    result = dify_adapter._sync_published_workflow_catalog_once()
+
+    assert result["app_count"] == 1
+    assert result["synced"] == [
+        {
+            "app_id": "app-1",
+            "workflow_id": "workflow-published",
+            "agent_id": "dify-workflow:app-1",
+            "tool_count": 4,
+        }
+    ]
+    assert registered[0]["agent_id"] == "dify-workflow:app-1"
+    assert registered[0]["metadata"]["catalog_sync"] is True
+    assert synced[0][0]["agent_id"] == "dify-workflow:app-1"
+    tools = {tool["name"]: tool for tool in synced[0][1]}
+    assert sorted(tools) == ["google_search", "local_script", "web_search", "weekday"]
+    assert tools["weekday"]["input_params"] == ["year", "month"]
+    assert tools["weekday"]["metadata"]["node_id"] == "tool-node-1"
+    assert tools["web_search"]["metadata"]["workflow_node_kind"] == "legacy_agent"
+    assert tools["google_search"]["metadata"]["workflow_node_kind"] == "agent_v2"
+    assert tools["local_script"]["input_params"] == ["path"]
+    assert "disabled_tool" not in tools
+
+
+def test_workflow_catalog_sync_skips_unchanged_tools(monkeypatch):
+    fake = _install_fake_workflow_catalog_modules(monkeypatch)
+    dify_adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+    remote_calls = []
+
+    class FakeRemote:
+        enabled = True
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def register_session(self, context):
+            remote_calls.append(("register", context.agent_id))
+
+        def sync_tools(self, context, tools):
+            remote_calls.append(("sync", context.agent_id, len(tools)))
+            return {"tool_count": len(tools)}
+
+    monkeypatch.setattr(dify_adapter, "RemoteGuardClient", FakeRemote)
+
+    first = dify_adapter._sync_workflow_tool_catalog(fake.app, fake.workflow)
+    second = dify_adapter._sync_workflow_tool_catalog(fake.app, fake.workflow)
+
+    assert first["tool_count"] == 4
+    assert second["skipped"] is True
+    assert remote_calls == [
+        ("register", "dify-workflow:app-1"),
+        ("sync", "dify-workflow:app-1", 4),
+    ]
+
+
+def test_workflow_catalog_sync_keeps_agent_id_stable_across_publish_ids(monkeypatch):
+    fake = _install_fake_workflow_catalog_modules(monkeypatch)
+    dify_adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+    synced_agent_ids = []
+
+    class FakeRemote:
+        enabled = True
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def register_session(self, context):
+            synced_agent_ids.append(("register", context.agent_id, context.metadata["workflow_id"]))
+
+        def sync_tools(self, context, tools):
+            synced_agent_ids.append(("sync", context.agent_id, context.metadata["workflow_id"]))
+            return {"tool_count": len(tools)}
+
+    monkeypatch.setattr(dify_adapter, "RemoteGuardClient", FakeRemote)
+
+    first = dify_adapter._sync_workflow_tool_catalog(fake.app, fake.workflow)
+    fake.workflow.id = "workflow-published-next"
+    fake.workflow.version = "2026-07-02T01:00:00"
+    second = dify_adapter._sync_workflow_tool_catalog(fake.app, fake.workflow)
+
+    assert first["agent_id"] == "dify-workflow:app-1"
+    assert second["agent_id"] == "dify-workflow:app-1"
+    assert synced_agent_ids == [
+        ("register", "dify-workflow:app-1", "workflow-published"),
+        ("sync", "dify-workflow:app-1", "workflow-published"),
+        ("register", "dify-workflow:app-1", "workflow-published-next"),
+        ("sync", "dify-workflow:app-1", "workflow-published-next"),
+    ]
+
+
+def test_workflow_publish_hook_schedules_single_workflow_sync(monkeypatch):
+    dify_adapter = _fresh_adapter(monkeypatch)
+    scheduled = []
+
+    class WorkflowService:
+        def publish_workflow(self, *, session, app_model, account):
+            return types.SimpleNamespace(id="workflow-1")
+
+    monkeypatch.setattr(
+        dify_adapter,
+        "_schedule_published_workflow_catalog_sync",
+        lambda workflow: scheduled.append(workflow.id),
+    )
+
+    assert dify_adapter._patch_workflow_publish_service(WorkflowService) is True
+    service = WorkflowService()
+    result = service.publish_workflow(session=None, app_model=None, account=None)
+
+    assert result.id == "workflow-1"
+    assert scheduled == ["workflow-1"]
+
+
+def test_workflow_catalog_sync_filters_app_ids(monkeypatch):
+    _install_fake_workflow_catalog_modules(monkeypatch)
+    dify_adapter = _fresh_adapter(monkeypatch)
+    monkeypatch.setenv("AGENTGUARD_DIFY_APP_IDS", "other-app")
+    monkeypatch.setenv("AGENTGUARD_SERVER_URL", "http://agentguard.test")
+
+    class FakeRemote:
+        enabled = True
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def register_session(self, context):
+            raise AssertionError("filtered app should not register")
+
+        def sync_tools(self, context, tools):
+            raise AssertionError("filtered app should not sync")
+
+    monkeypatch.setattr(dify_adapter, "RemoteGuardClient", FakeRemote)
+
+    result = dify_adapter._sync_published_workflow_catalog_once()
+
+    assert result == {"app_count": 1, "synced": []}
+
+
+def test_workflow_catalog_sync_dedupes_same_tool_name_by_agent(monkeypatch):
+    fake = _install_fake_workflow_catalog_modules(monkeypatch)
+    fake.workflow.graph["nodes"].append(
+        {
+            "id": "tool-node-2",
+            "data": {
+                "type": "tool",
+                "title": "Weekday B",
+                "provider_id": "time",
+                "provider_name": "time",
+                "provider_type": "builtin",
+                "tool_name": "weekday",
+                "tool_configurations": {"timezone": None},
+            },
+        }
+    )
+    dify_adapter = _fresh_adapter(monkeypatch)
+
+    tools = dify_adapter._workflow_catalog_tools(fake.app, fake.workflow)
+    by_name = {tool["name"]: tool for tool in tools}
+
+    assert [tool["name"] for tool in tools].count("weekday") == 1
+    assert by_name["weekday"]["input_params"] == ["year", "month", "timezone"]
+    assert by_name["weekday"]["metadata"]["workflow_node_ids"] == ["tool-node-1", "tool-node-2"]
+
+
+def test_workflow_catalog_sync_uses_registered_app_context(monkeypatch):
+    dify_adapter = _fresh_adapter(monkeypatch)
+    calls = []
+
+    class FakeAppContext:
+        def __enter__(self):
+            calls.append("enter")
+
+        def __exit__(self, exc_type, exc, tb):
+            calls.append("exit")
+            return False
+
+    class FakeApp:
+        def app_context(self):
+            return FakeAppContext()
+
+    dify_adapter.register_dify_flask_app(FakeApp())
+    monkeypatch.setattr(dify_adapter, "_sync_published_workflow_catalog_once", lambda: {"app_count": 0, "synced": []})
+
+    result = dify_adapter._sync_published_workflow_catalog_with_context()
+
+    assert result == {"app_count": 0, "synced": []}
+    assert calls == ["enter", "exit"]
 
 
 def test_workflow_question_classifier_node_emits_llm_events(monkeypatch):
