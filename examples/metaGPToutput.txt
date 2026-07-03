@@ -1,0 +1,1050 @@
+===================================
+Prompt: Please ask DocumentAgentA to retrieve document id=0, then ask MailAgentB to send it to admin@example.com.
+[AgentGuard attach_metagpt] DocumentAgentA: {'tools': 1, 'llm': 2}
+[AgentGuard attach_metagpt] MailAgentB: {'tools': 1, 'llm': 0}
+
+[AgentGuard Event]
+{
+  "event_id": "evt_116cda3952db4e2c",
+  "event_type": "tool_invoke",
+  "timestamp": 1782990429.1474154,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "tool_name": "retrieve_doc",
+    "arguments": {
+      "request": "Please ask DocumentAgentA to retrieve document id=0, then ask MailAgentB to send it to admin@example.com.",
+      "doc_id": 0,
+      "recipient": "admin@example.com"
+    },
+    "capabilities": []
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "owner_type": "RetrieveDocument",
+    "owner_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_tool_name": "retrieve_doc",
+    "action_name": "retrieve_doc",
+    "metagpt_action_name": "retrieve_doc",
+    "metagpt_action_type": "RetrieveDocument",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "DocumentAgentA",
+    "metagpt_role_profile": "DocumentRetriever",
+    "metagpt_role_goal": "Retrieve the requested document and hand it to MailAgentB.",
+    "metagpt_role_type": "DocumentAgentA",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "tool_name": "retrieve_doc",
+    "interceptors": [
+      "tool"
+    ]
+  }
+}
+
+[AgentGuard Event]
+{
+  "event_id": "evt_929205d9e659464b",
+  "event_type": "llm_input",
+  "timestamp": 1782990429.1544266,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "You are DocumentAgentA. Explain briefly which document should be retrieved and who should receive it. Do not send the email yourself.\n\nUser request: Please ask DocumentAgentA to retrieve document id=0, then ask MailAgentB to send it to admin@example.com.\nParsed document id: 0\nParsed recipient: admin@example.com"
+      }
+    ]
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "label": "aask",
+    "owner_type": "OpenAILLM",
+    "owner_module": "metagpt.provider.openai_api",
+    "request": {
+      "label": "aask",
+      "messages": "You are DocumentAgentA. Explain briefly which document should be retrieved and who should receive it. Do not send the email yourself.\n\nUser request: Please ask DocumentAgentA to retrieve document id=0, then ask MailAgentB to send it to admin@example.com.\nParsed document id: 0\nParsed recipient: admin@example.com",
+      "system_msgs": null
+    },
+    "llm_id": "metagpt.provider.openai_api.OpenAILLM:[REDACTED]",
+    "llm_model": "gpt-4-turbo",
+    "llm_api_type": "LLMType.OPENAI",
+    "llm_base_url": "https://api.gpt.ge/v1",
+    "metagpt_action_name": "retrieve_doc",
+    "metagpt_action_type": "RetrieveDocument",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "DocumentAgentA",
+    "metagpt_role_profile": "DocumentRetriever",
+    "metagpt_role_goal": "Retrieve the requested document and hand it to MailAgentB.",
+    "metagpt_role_type": "DocumentAgentA",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "interceptors": [
+      "llm"
+    ]
+  }
+}
+The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com.
+
+[AgentGuard Event]
+{
+  "event_id": "evt_4639cba370e0448b",
+  "event_type": "llm_output",
+  "timestamp": 1782990432.5116577,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "output": "The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com.",
+    "thought": null,
+    "final_output": "The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com."
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "label": "aask",
+    "owner_type": "OpenAILLM",
+    "owner_module": "metagpt.provider.openai_api",
+    "llm_id": "metagpt.provider.openai_api.OpenAILLM:[REDACTED]",
+    "llm_model": "gpt-4-turbo",
+    "llm_api_type": "LLMType.OPENAI",
+    "llm_base_url": "https://api.gpt.ge/v1",
+    "metagpt_action_name": "retrieve_doc",
+    "metagpt_action_type": "RetrieveDocument",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "DocumentAgentA",
+    "metagpt_role_profile": "DocumentRetriever",
+    "metagpt_role_goal": "Retrieve the requested document and hand it to MailAgentB.",
+    "metagpt_role_type": "DocumentAgentA",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "output_type": "dict",
+    "interceptors": [
+      "llm"
+    ]
+  }
+}
+[AgentGuard LLMOutput Parsed]
+{
+  "output": "The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com.",
+  "thought": null,
+  "final_output": "The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com."
+}
+Retrieving document id=0
+
+[AgentGuard Event]
+{
+  "event_id": "evt_6ddd22c2b9c649e9",
+  "event_type": "tool_result",
+  "timestamp": 1782990432.519676,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "tool_name": "retrieve_doc",
+    "result": "{\"doc_id\": 0, \"doc\": \"DOC#0: This is a document.\", \"addr\": \"admin@example.com\", \"agent_a_note\": \"The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com.\"}"
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "owner_type": "RetrieveDocument",
+    "owner_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_tool_name": "retrieve_doc",
+    "action_name": "retrieve_doc",
+    "metagpt_action_name": "retrieve_doc",
+    "metagpt_action_type": "RetrieveDocument",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "DocumentAgentA",
+    "metagpt_role_profile": "DocumentRetriever",
+    "metagpt_role_goal": "Retrieve the requested document and hand it to MailAgentB.",
+    "metagpt_role_type": "DocumentAgentA",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "interceptors": [
+      "tool_result"
+    ]
+  }
+}
+
+[AgentGuard Event]
+{
+  "event_id": "evt_3cdd087d11b64fcd",
+  "event_type": "tool_invoke",
+  "timestamp": 1782990432.527529,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "tool_name": "send_email_to",
+    "arguments": {
+      "doc": "DOC#0: This is a document.",
+      "addr": "admin@example.com",
+      "context": "DocumentAgentA: {\"doc_id\": 0, \"doc\": \"DOC#0: This is a document.\", \"addr\": \"admin@example.com\", \"agent_a_note\": \"The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com.\"}"
+    },
+    "capabilities": []
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "owner_type": "SendEmail",
+    "owner_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_tool_name": "send_email_to",
+    "action_name": "send_email_to",
+    "metagpt_action_name": "send_email_to",
+    "metagpt_action_type": "SendEmail",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "MailAgentB",
+    "metagpt_role_profile": "EmailSender",
+    "metagpt_role_goal": "Send documents received from DocumentAgentA to the requested recipient.",
+    "metagpt_role_type": "MailAgentB",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "tool_name": "send_email_to",
+    "interceptors": [
+      "tool"
+    ]
+  }
+}
+
+[AgentGuard Event]
+{
+  "event_id": "evt_5574e9d6f3a04b64",
+  "event_type": "llm_input",
+  "timestamp": 1782990432.5352716,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "You are MailAgentB. Confirm briefly that you are about to send the provided document to the requested recipient.\n\nRecipient: admin@example.com\nDocument: DOC#0: This is a document.\nConversation context:\nDocumentAgentA: {\"doc_id\": 0, \"doc\": \"DOC#0: This is a document.\", \"addr\": \"admin@example.com\", \"agent_a_note\": \"The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com.\"}"
+      }
+    ]
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "label": "aask",
+    "owner_type": "OpenAILLM",
+    "owner_module": "metagpt.provider.openai_api",
+    "request": {
+      "label": "aask",
+      "messages": "You are MailAgentB. Confirm briefly that you are about to send the provided document to the requested recipient.\n\nRecipient: admin@example.com\nDocument: DOC#0: This is a document.\nConversation context:\nDocumentAgentA: {\"doc_id\": 0, \"doc\": \"DOC#0: This is a document.\", \"addr\": \"admin@example.com\", \"agent_a_note\": \"The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will then send it to admin@example.com.\"}",
+      "system_msgs": null
+    },
+    "llm_id": "metagpt.provider.openai_api.OpenAILLM:[REDACTED]",
+    "llm_model": "gpt-4-turbo",
+    "llm_api_type": "LLMType.OPENAI",
+    "llm_base_url": "https://api.gpt.ge/v1",
+    "metagpt_action_name": "send_email_to",
+    "metagpt_action_type": "SendEmail",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "MailAgentB",
+    "metagpt_role_profile": "EmailSender",
+    "metagpt_role_goal": "Send documents received from DocumentAgentA to the requested recipient.",
+    "metagpt_role_type": "MailAgentB",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "interceptors": [
+      "llm"
+    ]
+  }
+}
+Confirmation: I am about to send the provided document (DOC#0) to admin@example.com.
+
+[AgentGuard Event]
+{
+  "event_id": "evt_a4905f08eadf48b2",
+  "event_type": "llm_output",
+  "timestamp": 1782990435.4906926,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "output": "Confirmation: I am about to send the provided document (DOC#0) to admin@example.com.",
+    "thought": null,
+    "final_output": "Confirmation: I am about to send the provided document (DOC#0) to admin@example.com."
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "label": "aask",
+    "owner_type": "OpenAILLM",
+    "owner_module": "metagpt.provider.openai_api",
+    "llm_id": "metagpt.provider.openai_api.OpenAILLM:[REDACTED]",
+    "llm_model": "gpt-4-turbo",
+    "llm_api_type": "LLMType.OPENAI",
+    "llm_base_url": "https://api.gpt.ge/v1",
+    "metagpt_action_name": "send_email_to",
+    "metagpt_action_type": "SendEmail",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "MailAgentB",
+    "metagpt_role_profile": "EmailSender",
+    "metagpt_role_goal": "Send documents received from DocumentAgentA to the requested recipient.",
+    "metagpt_role_type": "MailAgentB",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "output_type": "dict",
+    "interceptors": [
+      "llm"
+    ]
+  }
+}
+[AgentGuard LLMOutput Parsed]
+{
+  "output": "Confirmation: I am about to send the provided document (DOC#0) to admin@example.com.",
+  "thought": null,
+  "final_output": "Confirmation: I am about to send the provided document (DOC#0) to admin@example.com."
+}
+Email has sent to admin@example.com: DOC#0: This is a document.
+
+[AgentGuard Event]
+{
+  "event_id": "evt_4281f84a5b38452d",
+  "event_type": "tool_result",
+  "timestamp": 1782990435.4993691,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "tool_name": "send_email_to",
+    "result": "Email has sent to admin@example.com: DOC#0: This is a document.\nMailAgentB note: Confirmation: I am about to send the provided document (DOC#0) to admin@example.com."
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "owner_type": "SendEmail",
+    "owner_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_tool_name": "send_email_to",
+    "action_name": "send_email_to",
+    "metagpt_action_name": "send_email_to",
+    "metagpt_action_type": "SendEmail",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "MailAgentB",
+    "metagpt_role_profile": "EmailSender",
+    "metagpt_role_goal": "Send documents received from DocumentAgentA to the requested recipient.",
+    "metagpt_role_type": "MailAgentB",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "interceptors": [
+      "tool_result"
+    ]
+  }
+}
+===================================
+
+===================================
+Prompt: Please ask DocumentAgentA to retrieve document id=0, then ask MailAgentB to send it to alice@example.com.
+[AgentGuard attach_metagpt] DocumentAgentA: {'tools': 1, 'llm': 2}
+[AgentGuard attach_metagpt] MailAgentB: {'tools': 1, 'llm': 0}
+
+[AgentGuard Event]
+{
+  "event_id": "evt_93d7cebacd134be0",
+  "event_type": "tool_invoke",
+  "timestamp": 1782990435.5502446,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "tool_name": "retrieve_doc",
+    "arguments": {
+      "request": "Please ask DocumentAgentA to retrieve document id=0, then ask MailAgentB to send it to alice@example.com.",
+      "doc_id": 0,
+      "recipient": "alice@example.com"
+    },
+    "capabilities": []
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "owner_type": "RetrieveDocument",
+    "owner_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_tool_name": "retrieve_doc",
+    "action_name": "retrieve_doc",
+    "metagpt_action_name": "retrieve_doc",
+    "metagpt_action_type": "RetrieveDocument",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "DocumentAgentA",
+    "metagpt_role_profile": "DocumentRetriever",
+    "metagpt_role_goal": "Retrieve the requested document and hand it to MailAgentB.",
+    "metagpt_role_type": "DocumentAgentA",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "tool_name": "retrieve_doc",
+    "interceptors": [
+      "tool"
+    ]
+  }
+}
+
+[AgentGuard Event]
+{
+  "event_id": "evt_b2b0a9ba86c5425d",
+  "event_type": "llm_input",
+  "timestamp": 1782990435.5585287,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "You are DocumentAgentA. Explain briefly which document should be retrieved and who should receive it. Do not send the email yourself.\n\nUser request: Please ask DocumentAgentA to retrieve document id=0, then ask MailAgentB to send it to alice@example.com.\nParsed document id: 0\nParsed recipient: alice@example.com"
+      }
+    ]
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "label": "aask",
+    "owner_type": "OpenAILLM",
+    "owner_module": "metagpt.provider.openai_api",
+    "request": {
+      "label": "aask",
+      "messages": "You are DocumentAgentA. Explain briefly which document should be retrieved and who should receive it. Do not send the email yourself.\n\nUser request: Please ask DocumentAgentA to retrieve document id=0, then ask MailAgentB to send it to alice@example.com.\nParsed document id: 0\nParsed recipient: alice@example.com",
+      "system_msgs": null
+    },
+    "llm_id": "metagpt.provider.openai_api.OpenAILLM:[REDACTED]",
+    "llm_model": "gpt-4-turbo",
+    "llm_api_type": "LLMType.OPENAI",
+    "llm_base_url": "https://api.gpt.ge/v1",
+    "metagpt_action_name": "retrieve_doc",
+    "metagpt_action_type": "RetrieveDocument",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "DocumentAgentA",
+    "metagpt_role_profile": "DocumentRetriever",
+    "metagpt_role_goal": "Retrieve the requested document and hand it to MailAgentB.",
+    "metagpt_role_type": "DocumentAgentA",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "interceptors": [
+      "llm"
+    ]
+  }
+}
+The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com.
+
+[AgentGuard Event]
+{
+  "event_id": "evt_e1a0c75feedd4086",
+  "event_type": "llm_output",
+  "timestamp": 1782990437.4207397,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "output": "The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com.",
+    "thought": null,
+    "final_output": "The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com."
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "label": "aask",
+    "owner_type": "OpenAILLM",
+    "owner_module": "metagpt.provider.openai_api",
+    "llm_id": "metagpt.provider.openai_api.OpenAILLM:[REDACTED]",
+    "llm_model": "gpt-4-turbo",
+    "llm_api_type": "LLMType.OPENAI",
+    "llm_base_url": "https://api.gpt.ge/v1",
+    "metagpt_action_name": "retrieve_doc",
+    "metagpt_action_type": "RetrieveDocument",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "DocumentAgentA",
+    "metagpt_role_profile": "DocumentRetriever",
+    "metagpt_role_goal": "Retrieve the requested document and hand it to MailAgentB.",
+    "metagpt_role_type": "DocumentAgentA",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "output_type": "dict",
+    "interceptors": [
+      "llm"
+    ]
+  }
+}
+[AgentGuard LLMOutput Parsed]
+{
+  "output": "The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com.",
+  "thought": null,
+  "final_output": "The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com."
+}
+Retrieving document id=0
+
+[AgentGuard Event]
+{
+  "event_id": "evt_364890d3f91b41d1",
+  "event_type": "tool_result",
+  "timestamp": 1782990437.4312227,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "tool_name": "retrieve_doc",
+    "result": "{\"doc_id\": 0, \"doc\": \"DOC#0: This is a document.\", \"addr\": \"alice@example.com\", \"agent_a_note\": \"The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com.\"}"
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "owner_type": "RetrieveDocument",
+    "owner_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_tool_name": "retrieve_doc",
+    "action_name": "retrieve_doc",
+    "metagpt_action_name": "retrieve_doc",
+    "metagpt_action_type": "RetrieveDocument",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "DocumentAgentA",
+    "metagpt_role_profile": "DocumentRetriever",
+    "metagpt_role_goal": "Retrieve the requested document and hand it to MailAgentB.",
+    "metagpt_role_type": "DocumentAgentA",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "interceptors": [
+      "tool_result"
+    ]
+  }
+}
+
+[AgentGuard Event]
+{
+  "event_id": "evt_52a2ae4e0c824b44",
+  "event_type": "tool_invoke",
+  "timestamp": 1782990437.440567,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "tool_name": "send_email_to",
+    "arguments": {
+      "doc": "DOC#0: This is a document.",
+      "addr": "alice@example.com",
+      "context": "DocumentAgentA: {\"doc_id\": 0, \"doc\": \"DOC#0: This is a document.\", \"addr\": \"alice@example.com\", \"agent_a_note\": \"The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com.\"}"
+    },
+    "capabilities": []
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "owner_type": "SendEmail",
+    "owner_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_tool_name": "send_email_to",
+    "action_name": "send_email_to",
+    "metagpt_action_name": "send_email_to",
+    "metagpt_action_type": "SendEmail",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "MailAgentB",
+    "metagpt_role_profile": "EmailSender",
+    "metagpt_role_goal": "Send documents received from DocumentAgentA to the requested recipient.",
+    "metagpt_role_type": "MailAgentB",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "tool_name": "send_email_to",
+    "interceptors": [
+      "tool"
+    ]
+  }
+}
+
+[AgentGuard Event]
+{
+  "event_id": "evt_736b4d8730104ca3",
+  "event_type": "llm_input",
+  "timestamp": 1782990437.4493742,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "You are MailAgentB. Confirm briefly that you are about to send the provided document to the requested recipient.\n\nRecipient: alice@example.com\nDocument: DOC#0: This is a document.\nConversation context:\nDocumentAgentA: {\"doc_id\": 0, \"doc\": \"DOC#0: This is a document.\", \"addr\": \"alice@example.com\", \"agent_a_note\": \"The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com.\"}"
+      }
+    ]
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "label": "aask",
+    "owner_type": "OpenAILLM",
+    "owner_module": "metagpt.provider.openai_api",
+    "request": {
+      "label": "aask",
+      "messages": "You are MailAgentB. Confirm briefly that you are about to send the provided document to the requested recipient.\n\nRecipient: alice@example.com\nDocument: DOC#0: This is a document.\nConversation context:\nDocumentAgentA: {\"doc_id\": 0, \"doc\": \"DOC#0: This is a document.\", \"addr\": \"alice@example.com\", \"agent_a_note\": \"The document to be retrieved is document id=0. This document should be handed to MailAgentB, who will send it to alice@example.com.\"}",
+      "system_msgs": null
+    },
+    "llm_id": "metagpt.provider.openai_api.OpenAILLM:[REDACTED]",
+    "llm_model": "gpt-4-turbo",
+    "llm_api_type": "LLMType.OPENAI",
+    "llm_base_url": "https://api.gpt.ge/v1",
+    "metagpt_action_name": "send_email_to",
+    "metagpt_action_type": "SendEmail",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "MailAgentB",
+    "metagpt_role_profile": "EmailSender",
+    "metagpt_role_goal": "Send documents received from DocumentAgentA to the requested recipient.",
+    "metagpt_role_type": "MailAgentB",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "interceptors": [
+      "llm"
+    ]
+  }
+}
+Confirmed. I am about to send DOC#0 to alice@example.com.
+
+[AgentGuard Event]
+{
+  "event_id": "evt_4eb5adedf2a54d99",
+  "event_type": "llm_output",
+  "timestamp": 1782990440.0092351,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "output": "Confirmed. I am about to send DOC#0 to alice@example.com.",
+    "thought": null,
+    "final_output": "Confirmed. I am about to send DOC#0 to alice@example.com."
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "label": "aask",
+    "owner_type": "OpenAILLM",
+    "owner_module": "metagpt.provider.openai_api",
+    "llm_id": "metagpt.provider.openai_api.OpenAILLM:[REDACTED]",
+    "llm_model": "gpt-4-turbo",
+    "llm_api_type": "LLMType.OPENAI",
+    "llm_base_url": "https://api.gpt.ge/v1",
+    "metagpt_action_name": "send_email_to",
+    "metagpt_action_type": "SendEmail",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "MailAgentB",
+    "metagpt_role_profile": "EmailSender",
+    "metagpt_role_goal": "Send documents received from DocumentAgentA to the requested recipient.",
+    "metagpt_role_type": "MailAgentB",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "output_type": "dict",
+    "interceptors": [
+      "llm"
+    ]
+  }
+}
+[AgentGuard LLMOutput Parsed]
+{
+  "output": "Confirmed. I am about to send DOC#0 to alice@example.com.",
+  "thought": null,
+  "final_output": "Confirmed. I am about to send DOC#0 to alice@example.com."
+}
+Email has sent to alice@example.com: DOC#0: This is a document.
+
+[AgentGuard Event]
+{
+  "event_id": "evt_22deb43ad28f429c",
+  "event_type": "tool_result",
+  "timestamp": 1782990440.0187216,
+  "context": {
+    "session_id": "metagpt-remote-session",
+    "user_id": null,
+    "agent_id": "metagpt-remote-demo",
+    "task_id": null,
+    "policy": null,
+    "policy_version": "builtin",
+    "environment": null,
+    "metadata": {
+      "client_session_key": "[REDACTED]",
+      "client_plugin_config": null,
+      "remote_plugin_config": null,
+      "client_config_url": "http://127.0.0.1:42423/v1/client/plugins/config",
+      "client_plugin_list_url": "http://127.0.0.1:42423/v1/client/plugins/list",
+      "client_health_url": "http://127.0.0.1:42423/v1/client/health",
+      "principal": {
+        "session_id": "metagpt-remote-session",
+        "agent_id": "metagpt-remote-demo",
+        "role": "default",
+        "trust_level": 1
+      },
+      "guard_mode": "enforce",
+      "guard_fail_open": false,
+      "goal": "metagpt multi-agent emailcase demo"
+    }
+  },
+  "payload": {
+    "tool_name": "send_email_to",
+    "result": "Email has sent to alice@example.com: DOC#0: This is a document.\nMailAgentB note: Confirmed. I am about to send DOC#0 to alice@example.com."
+  },
+  "risk_signals": [],
+  "metadata": {
+    "adapter": "metagpt",
+    "owner_type": "SendEmail",
+    "owner_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_tool_name": "send_email_to",
+    "action_name": "send_email_to",
+    "metagpt_action_name": "send_email_to",
+    "metagpt_action_type": "SendEmail",
+    "metagpt_action_module": "metagpt.actions.agentguard_emailcase",
+    "metagpt_role_name": "MailAgentB",
+    "metagpt_role_profile": "EmailSender",
+    "metagpt_role_goal": "Send documents received from DocumentAgentA to the requested recipient.",
+    "metagpt_role_type": "MailAgentB",
+    "metagpt_role_module": "metagpt.roles.agentguard_emailcase",
+    "interceptors": [
+      "tool_result"
+    ]
+  }
+}
+===================================
+
+
+[Audit Summary]
+{'event_type': 'tool_invoke', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'rule_based_plugin': {'matched': False, 'rule_id': None, 'effect': None, 'reason': '', 'matched_rule_ids': []}, 'policy_version': 'v-4f53cda18c', 'plugin_outcomes': [{'plugin': 'rule_based_plugin', 'decision_candidate': None, 'risk_signals': [], 'is_final': True, 'metadata': {'rule_based_plugin': {'matched': False, 'rule_id': None, 'effect': None, 'reason': '', 'matched_rule_ids': []}, 'policy_version': 'v-4f53cda18c'}}]}}
+{'event_type': 'llm_input', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'llm_output', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'tool_result', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'tool_invoke', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'rule_based_plugin': {'matched': False, 'rule_id': None, 'effect': None, 'reason': '', 'matched_rule_ids': []}, 'policy_version': 'v-4f53cda18c', 'plugin_outcomes': [{'plugin': 'rule_based_plugin', 'decision_candidate': None, 'risk_signals': [], 'is_final': True, 'metadata': {'rule_based_plugin': {'matched': False, 'rule_id': None, 'effect': None, 'reason': '', 'matched_rule_ids': []}, 'policy_version': 'v-4f53cda18c'}}]}}
+{'event_type': 'llm_input', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'llm_output', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'tool_result', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'tool_invoke', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'rule_based_plugin': {'matched': False, 'rule_id': None, 'effect': None, 'reason': '', 'matched_rule_ids': []}, 'policy_version': 'v-4f53cda18c', 'plugin_outcomes': [{'plugin': 'rule_based_plugin', 'decision_candidate': None, 'risk_signals': [], 'is_final': True, 'metadata': {'rule_based_plugin': {'matched': False, 'rule_id': None, 'effect': None, 'reason': '', 'matched_rule_ids': []}, 'policy_version': 'v-4f53cda18c'}}]}}
+{'event_type': 'llm_input', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'llm_output', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'tool_result', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'tool_invoke', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'rule_based_plugin': {'matched': False, 'rule_id': None, 'effect': None, 'reason': '', 'matched_rule_ids': []}, 'policy_version': 'v-4f53cda18c', 'plugin_outcomes': [{'plugin': 'rule_based_plugin', 'decision_candidate': None, 'risk_signals': [], 'is_final': True, 'metadata': {'rule_based_plugin': {'matched': False, 'rule_id': None, 'effect': None, 'reason': '', 'matched_rule_ids': []}, 'policy_version': 'v-4f53cda18c'}}]}}
+{'event_type': 'llm_input', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'llm_output', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}
+{'event_type': 'tool_result', 'decision_type': 'allow', 'policy_id': 'server:no_final_plugin', 'reason': 'No server plugin returned a final decision; default allow.', 'risk_signals': [], 'route': 'remote', 'plugin_metadata': {'plugin_outcomes': []}}

@@ -274,6 +274,20 @@ class AgentGuard:
             agent, self, wrap_tools=wrap_tools, wrap_llm=wrap_llm
         )
 
+    def attach_metagpt(
+        self,
+        agent: Any,
+        *,
+        wrap_tools: bool = True,
+        wrap_llm: bool = True,
+    ) -> dict[str, Any]:
+        """Patch a MetaGPT agent in-place while preserving its native loop."""
+        from agentguard.adapters.agent.metagpt import MetaGPTAgentAdapter  # noqa: PLC0415
+
+        return MetaGPTAgentAdapter().attach(
+            agent, self, wrap_tools=wrap_tools, wrap_llm=wrap_llm
+        )
+
     # ---- registration --------------------------------------------------
     def register_tool(self, fn: Callable[..., Any], **meta: Any) -> ToolMetadata:
         metadata = self._registry.register(fn, **meta)

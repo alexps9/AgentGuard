@@ -11,6 +11,7 @@ from agentguard.adapters.agent.dify_bootstrap import install_dify_app_factory_ca
 from agentguard.adapters.agent.langchain import LangChainAgentAdapter
 from agentguard.adapters.agent.langgraph import LangGraphAgentAdapter
 from agentguard.adapters.agent.llamaindex import LlamaIndexAgentAdapter
+from agentguard.adapters.agent.metagpt import MetaGPTAgentAdapter
 from agentguard.adapters.agent.normalization import (
     LLMInputNormalization,
     LLMOutputNormalization,
@@ -29,6 +30,7 @@ __all__ = [
     "LangChainAgentAdapter",
     "LangGraphAgentAdapter",
     "LlamaIndexAgentAdapter",
+    "MetaGPTAgentAdapter",
     "AutogenAgentAdapter",
     "CrewAIAgentAdapter",
     "OpenAIAgentsAdapter",
