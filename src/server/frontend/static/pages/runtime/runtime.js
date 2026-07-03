@@ -50,6 +50,9 @@
     timeline: document.getElementById("runtime-timeline"),
     approvalList: document.getElementById("runtime-approval-list"),
     auditBody: document.getElementById("runtime-audit-body"),
+    auditSummary: document.getElementById("runtime-audit-summary"),
+    auditArguments: document.getElementById("runtime-audit-arguments"),
+    auditResult: document.getElementById("runtime-audit-result"),
     auditDetail: document.getElementById("runtime-audit-detail"),
   };
 
@@ -74,6 +77,37 @@
 
   function formatAction(action) {
     return String(action || "unknown").toUpperCase();
+  }
+
+  function formatEventType(eventType) {
+    const value = String(eventType || "").trim().toLowerCase();
+    if (value === "tool_invoke") {
+      return "Tool Invoke";
+    }
+    if (value === "tool_result") {
+      return "Tool Result";
+    }
+    if (value === "llm_input") {
+      return "LLM Input";
+    }
+    if (value === "llm_output") {
+      return "LLM Output";
+    }
+    return value ? value.replace(/_/g, " ") : "Unknown";
+  }
+
+  function formatRuntimeSource(source) {
+    const value = String(source || "").trim().toLowerCase();
+    if (value === "mcp") {
+      return "MCP Tool";
+    }
+    if (value === "tool") {
+      return "Tool";
+    }
+    if (value === "llm") {
+      return "LLM";
+    }
+    return value ? value.toUpperCase() : "Unknown";
   }
 
   function formatNumber(value) {
@@ -222,16 +256,23 @@
   function normalizeAuditRow(item) {
     const event = item?.event || {};
     const decision = item?.decision || {};
+    const runtimeState = item?.runtime_state && typeof item.runtime_state === "object" ? item.runtime_state : {};
     const rules = Array.isArray(decision?.matched_rules) ? decision.matched_rules.map(String) : [];
     const pluginSummary = Array.isArray(decision?.plugin_summary) ? decision.plugin_summary : [];
+    const eventType = String(runtimeState?.event_type || event?.event_type || "").toLowerCase();
+    const runtimeSource = String(runtimeState?.source || event?.tool_call?.source || "").toLowerCase();
     return {
       session: String(event?.principal?.session_id || "-"),
       agent: String(event?.principal?.agent_id || "-"),
       tool: String(event?.tool_call?.tool_name || "-"),
+      toolLabel: String(runtimeState?.mcp?.mcp_tool_name || event?.tool_call?.mcp?.mcp_tool_name || "").trim(),
+      sourceLabel: runtimeSource,
+      eventType,
       action: String(decision?.action || "unknown").toLowerCase(),
       risk: typeof decision?.risk_score === "number" ? decision.risk_score : Number(decision?.risk_score || 0),
       matchedRules: rules,
       pluginSummary: pluginSummary.map(normalizePluginSummaryItem).filter((entry) => entry.name),
+      runtimeState,
       raw: item,
     };
   }
@@ -396,6 +437,7 @@
       const row = document.createElement("tr");
       row.innerHTML = `<td colspan="6"><div class="empty-state">${escapeHtml(state.errors.audit)}</div></td>`;
       elements.auditBody.appendChild(row);
+      renderAuditDetail();
       elements.auditDetail.textContent = "Audit data is unavailable.";
       return;
     }
@@ -403,6 +445,7 @@
       const row = document.createElement("tr");
       row.innerHTML = `<td colspan="6"><div class="empty-state">No audit records have been captured yet.</div></td>`;
       elements.auditBody.appendChild(row);
+      renderAuditDetail();
       elements.auditDetail.textContent = "No audit detail available.";
       return;
     }
@@ -421,7 +464,15 @@
       row.innerHTML = `
         <td>${escapeHtml(item.session)}</td>
         <td>${escapeHtml(item.agent)}</td>
-        <td>${escapeHtml(item.tool)}</td>
+        <td>
+          <div class="runtime-tool-cell">
+            <strong>${escapeHtml(item.tool)}</strong>
+            <div class="runtime-tool-meta">
+              ${item.sourceLabel === "mcp" ? '<span class="pill runtime-source-pill">MCP</span>' : '<span class="pill runtime-source-pill">Tool</span>'}
+              ${item.toolLabel ? `<span class="subtle">${escapeHtml(item.toolLabel)}</span>` : ""}
+            </div>
+          </div>
+        </td>
         <td><span class="pill ${actionTone(item.action)}">${escapeHtml(formatAction(item.action))}</span></td>
         <td>${escapeHtml(formatRisk(item.risk))}</td>
         <td>${escapeHtml(item.matchedRules.join(", ") || "-")}</td>
@@ -435,10 +486,43 @@
   function renderAuditDetail() {
     const selected = state.auditRows[state.selectedAuditIndex];
     if (!selected) {
+      if (elements.auditSummary) {
+        elements.auditSummary.innerHTML = '<div class="empty-state runtime-detail-empty">Select an audit row to inspect event and decision JSON.</div>';
+      }
+      if (elements.auditArguments) {
+        elements.auditArguments.textContent = "Select an audit row to inspect tool arguments.";
+      }
+      if (elements.auditResult) {
+        elements.auditResult.textContent = "Select an audit row to inspect the tool result.";
+      }
       elements.auditDetail.textContent = "Select an audit row to inspect event and decision JSON.";
       return;
     }
+    const runtimeState = selected.runtimeState || {};
+    const summaryPills = [
+      { label: formatEventType(runtimeState.event_type || selected.eventType) },
+      { label: formatRuntimeSource(runtimeState.source || selected.sourceLabel) },
+      { label: selected.tool || "-" },
+    ];
+    if (runtimeState?.mcp?.mcp_name) {
+      summaryPills.push({ label: runtimeState.mcp.mcp_name });
+    }
+    if (runtimeState?.mcp?.mcp_tool_name) {
+      summaryPills.push({ label: runtimeState.mcp.mcp_tool_name });
+    }
+    if (elements.auditSummary) {
+      elements.auditSummary.innerHTML = summaryPills.map((item) => `<span class="pill runtime-detail-pill">${escapeHtml(item.label)}</span>`).join("");
+    }
+    if (elements.auditArguments) {
+      const argsValue = runtimeState.arguments ?? selected.raw?.event?.tool_call?.args ?? selected.raw?.event?.payload?.arguments ?? {};
+      elements.auditArguments.textContent = JSON.stringify(argsValue ?? {}, null, 2);
+    }
+    if (elements.auditResult) {
+      const resultValue = runtimeState.result ?? selected.raw?.event?.tool_call?.result ?? selected.raw?.event?.payload?.result ?? null;
+      elements.auditResult.textContent = JSON.stringify(resultValue ?? null, null, 2);
+    }
     const payload = {
+      runtime_state: runtimeState,
       event: selected.raw?.event || {},
       decision: selected.raw?.decision || {},
       matched_rules: selected.matchedRules,

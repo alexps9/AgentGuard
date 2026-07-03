@@ -575,7 +575,7 @@ test("MCP runtime tool calls carry scanned MCP metadata through existing tool ho
 
     check(event) {
       assert.equal(event.payload.tool_name, "local_mcp__read_file");
-      assert.equal(event.payload.result, "{\"content\":[{\"type\":\"text\",\"text\":\"hello\"}]}");
+      assert.deepEqual(event.payload.result, { content: [{ type: "text", text: "hello" }] });
       assert.equal(event.metadata.toolSource, "mcp");
       assert.equal(event.metadata.mcp_name, "local_mcp");
       assert.equal(event.metadata.mcp_tool_name, "read_file");

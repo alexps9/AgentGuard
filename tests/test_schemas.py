@@ -15,6 +15,17 @@ def test_event_redaction_strips_secrets():
     assert "sk-ABCDEFGH12345678" in str(e.payload)
 
 
+def test_tool_result_preserves_structured_result_roundtrip():
+    ctx = RuntimeContext(session_id="s")
+    result = {"content": [{"type": "text", "text": "uploaded"}]}
+    event = ev.tool_result(ctx, "mcp_server__upload", result)
+
+    assert event.payload.result == result
+
+    restored = ev.RuntimeEvent.from_dict(event.to_dict())
+    assert restored.payload.result == result
+
+
 def test_event_stable_hash_ignores_volatile_fields():
     ctx = RuntimeContext(session_id="s")
     a = ev.tool_invoke(ctx, "t", {"x": 1}, capabilities=["read_file"])

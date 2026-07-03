@@ -805,6 +805,9 @@ def test_runtime_page_renders_shared_sidebar_and_active_nav():
     assert "active" in body
     assert 'href="/labels.html"' in body
     assert 'data-agent-required="true"' in body
+    assert 'id="runtime-audit-summary"' in body
+    assert 'id="runtime-audit-arguments"' in body
+    assert 'id="runtime-audit-result"' in body
 
 
 def test_home_page_renders_intro_and_home_active_nav():

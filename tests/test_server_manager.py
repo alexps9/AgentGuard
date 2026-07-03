@@ -318,8 +318,8 @@ def test_manager_returns_plugin_result():
     }
     res = m.decide(req)
     assert "plugin_result" in res
-    assert "prompt_injection" in res["plugin_result"]["risk_signals"]
-    assert "prompt_injection" in res["risk_signals"]
+    assert "instruction_override" in res["plugin_result"]["risk_signals"]
+    assert "instruction_override" in res["risk_signals"]
 
 
 def test_manager_uses_plugin_config_file(tmp_path):
@@ -348,7 +348,7 @@ def test_manager_uses_plugin_config_file(tmp_path):
     }
     res = m.decide(req)
     assert res["plugin_result"]["risk_signals"] == []
-    assert "prompt_injection" not in res["risk_signals"]
+    assert "instruction_override" not in res["risk_signals"]
 
 
 def test_manager_uses_rule_based_plugin_policy_env(tmp_path):

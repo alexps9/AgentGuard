@@ -116,9 +116,9 @@ class ToolInvoke {
 }
 
 class ToolResult {
-  constructor({ tool_name = "", result = "" } = {}) {
+  constructor({ tool_name = "", result = null } = {}) {
     this.tool_name = coerceText(tool_name);
-    this.result = coerceText(result);
+    this.result = result;
   }
 
   toDict() {

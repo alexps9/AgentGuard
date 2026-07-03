@@ -105,7 +105,7 @@ class ToolInvoke(_PayloadMapping):
 @dataclass
 class ToolResult(_PayloadMapping):
     tool_name: str
-    result: str
+    result: Any
 
     def to_dict(self) -> dict[str, Any]:
         return {"tool_name": self.tool_name, "result": self.result}
@@ -291,7 +291,7 @@ def tool_result(
     error: str | None = None,
     **meta: Any,
 ) -> RuntimeEvent:
-    payload = ToolResult(tool_name=str(tool_name), result=_coerce_text(result))
+    payload = ToolResult(tool_name=str(tool_name), result=result)
     if error is not None:
         meta.setdefault("error", error)
     return _make(EventType.TOOL_RESULT, context, payload, metadata=meta)
@@ -343,7 +343,7 @@ def _payload_from_dict(event_type: EventType, payload: Any) -> RuntimePayload:
     if event_type == EventType.TOOL_RESULT:
         return ToolResult(
             tool_name=_coerce_text(data.get("tool_name")),
-            result=_coerce_text(data.get("result")),
+            result=data.get("result"),
         )
     raise ValueError(f"unsupported event type: {event_type}")
 
