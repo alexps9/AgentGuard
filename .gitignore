@@ -29,6 +29,8 @@ ENV/
 htmlcov/
 coverage.xml
 *.coveragerc
+todo/
+ACPs-community/
 
 # mypy / ruff / type checkers
 .mypy_cache/

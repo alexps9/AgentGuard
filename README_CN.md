@@ -82,6 +82,8 @@ AgentGuard 位于大模型规划引擎与工具之间，不介入智能体的规
 - [LangChain](https://github.com/langchain-ai/langchain)
 - [AutoGen](https://github.com/microsoft/autogen)
 - [OpenAI Agents SDK](https://github.com/openai/openai-agents-python)
+- [LangGraph](https://github.com/langchain-ai/langgraph)
+- [LlamaIndex](https://github.com/run-llama/llama_index)
 - [Dify](https://github.com/langgenius/dify)
 - [OpenClaw](https://github.com/openclaw/openclaw)
 
@@ -411,8 +413,10 @@ https://github.com/user-attachments/assets/75a17e37-7f51-4c59-96fa-ea449eb79859
 
 ### v2.1
 
-- 兼容 LlamaIndex、Langflow。
+- 兼容 LlamaIndex、Dify。
 - 支持基于大模型的规则生成。
+- 支持在运行前对 skill 和 MCP 进行扫描。
+- 新增中文版界面。
 
 ### v2.0
 

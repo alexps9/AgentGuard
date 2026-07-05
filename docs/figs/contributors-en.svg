@@ -46,6 +46,12 @@
       <text class="role" x="0" y="82">Master Student</text>
       <text class="school" x="0" y="104">Fudan University</text>
     </g>
+    <g id="card-kw">
+      <use href="#avatar" x="0" y="0" />
+      <text class="name" x="0" y="58">Kefan Wu</text>
+      <text class="role" x="0" y="82">Master Student</text>
+      <text class="school" x="0" y="104">Fudan University</text>
+    </g>
     <g id="card-zs">
       <use href="#avatar" x="0" y="0" />
       <text class="name" x="0" y="58">Zhuoxiang Shen</text>
@@ -72,7 +78,8 @@
   <g transform="translate(840 82)"><use href="#card-zc" /></g>
   <g transform="translate(1080 82)"><use href="#card-jh" /></g>
 
-  <g transform="translate(120 276)"><a href="https://zhxshen.github.io/"><use href="#card-zs" /></a></g>
-  <g transform="translate(360 276)"><a href="https://ravensanstete.github.io/"><use href="#card-xp" /></a></g>
-  <g transform="translate(600 276)"><a href="https://ghong.site/"><use href="#card-gh" /></a></g>
+  <g transform="translate(120 276)"><use href="#card-kw" /></g>
+  <g transform="translate(360 276)"><a href="https://zhxshen.github.io/"><use href="#card-zs" /></a></g>
+  <g transform="translate(600 276)"><a href="https://ravensanstete.github.io/"><use href="#card-xp" /></a></g>
+  <g transform="translate(840 276)"><a href="https://ghong.site/"><use href="#card-gh" /></a></g>
 </svg>

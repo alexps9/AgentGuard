@@ -82,6 +82,8 @@ Currently, we support the following agent frameworks:
 - [LangChain](https://github.com/langchain-ai/langchain)
 - [AutoGen](https://github.com/microsoft/autogen)
 - [OpenAI Agents SDK](https://github.com/openai/openai-agents-python)
+- [LangGraph](https://github.com/langchain-ai/langgraph)
+- [LlamaIndex](https://github.com/run-llama/llama_index)
 - [Dify](https://github.com/langgenius/dify)
 - [OpenClaw](https://github.com/openclaw/openclaw)
 
@@ -414,8 +416,10 @@ This project is licensed under the [GNU General Public License v3.0 (GPLv3)](./L
 
 ### v2.1
 
-- Added compatibility with LlamaIndex and Langflow.
+- Added compatibility with LlamaIndex and Dify.
 - Added support for LLM-based rule generation.
+- Added pre-runtime scanning support for skills and MCP integrations.
+- Added a Simplified Chinese UI.
 
 ### v2.0
 

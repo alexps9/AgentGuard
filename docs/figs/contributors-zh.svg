@@ -46,6 +46,12 @@
       <text class="role" x="0" y="82">硕士生</text>
       <text class="school" x="0" y="104">复旦大学</text>
     </g>
+    <g id="card-wkf">
+      <use href="#avatar" x="0" y="0" />
+      <text class="name" x="0" y="58">吴珂钒</text>
+      <text class="role" x="0" y="82">硕士生</text>
+      <text class="school" x="0" y="104">复旦大学</text>
+    </g>
     <g id="card-szx">
       <use href="#avatar" x="0" y="0" />
       <text class="name" x="0" y="58">申卓祥</text>
@@ -72,7 +78,8 @@
   <g transform="translate(840 82)"><use href="#card-czl" /></g>
   <g transform="translate(1080 82)"><use href="#card-hjr" /></g>
 
-  <g transform="translate(120 276)"><a href="https://zhxshen.github.io/"><use href="#card-szx" /></a></g>
-  <g transform="translate(360 276)"><a href="https://ravensanstete.github.io/"><use href="#card-pxd" /></a></g>
-  <g transform="translate(600 276)"><a href="https://ghong.site/"><use href="#card-hg" /></a></g>
+  <g transform="translate(120 276)"><use href="#card-wkf" /></g>
+  <g transform="translate(360 276)"><a href="https://zhxshen.github.io/"><use href="#card-szx" /></a></g>
+  <g transform="translate(600 276)"><a href="https://ravensanstete.github.io/"><use href="#card-pxd" /></a></g>
+  <g transform="translate(840 276)"><a href="https://ghong.site/"><use href="#card-hg" /></a></g>
 </svg>
