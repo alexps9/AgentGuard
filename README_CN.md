@@ -349,7 +349,13 @@ UI 界面还支持策略可视化配置和动态热更新。
 
 ## 🎬 演示视频
 
-https://github.com/user-attachments/assets/75a17e37-7f51-4c59-96fa-ea449eb79859
+<p align="center">
+  <a href="https://ik.imagekit.io/4vsnlaxpc/6dd7e279a6b8d9be652002280d026a46_raw.mp4">
+    <img src="./docs/figs/begin.png" alt="观看 AgentGuard 演示视频" width="900" />
+  </a>
+</p>
+
+<p align="center">点击观看演示视频。</p>
 
 ## 🏆 相比于现有框架的能力优势
 
