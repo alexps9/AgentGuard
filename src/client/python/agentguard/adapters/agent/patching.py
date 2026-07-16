@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from agentguard.adapters.agent.normalization import (
     DEFAULT_AGENT_EVENT_NORMALIZER,

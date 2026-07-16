@@ -93,7 +93,7 @@ class Guard:
         self.fail_open = fail_open
         self._guard: AgentGuard | None = None
 
-    def start(self, *, principal: Principal, goal: str | None = None) -> "Guard":
+    def start(self, *, principal: Principal, goal: str | None = None) -> Guard:
         self._guard = self._build_guard(**principal.to_context_kwargs())
         self._guard.context.metadata["guard_mode"] = self.mode
         if self.fail_open is not None:

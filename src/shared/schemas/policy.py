@@ -44,7 +44,7 @@ class TraceClause:
         return {"steps": [step.to_dict() for step in self.steps]}
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "TraceClause":
+    def from_dict(cls, data: dict[str, Any]) -> TraceClause:
         return cls(
             steps=[TraceStep.from_dict(item) for item in data.get("steps") or []],
         )
@@ -66,7 +66,7 @@ class RuleCondition:
         return {"field": self.field, "op": self.op, "value": self.value}
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "RuleCondition":
+    def from_dict(cls, data: dict[str, Any]) -> RuleCondition:
         return cls(field=data["field"], op=data.get("op", "eq"), value=data.get("value"))
 
 
@@ -175,7 +175,7 @@ class PolicyRule:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "PolicyRule":
+    def from_dict(cls, data: dict[str, Any]) -> PolicyRule:
         return cls(
             rule_id=data["rule_id"],
             effect=PolicyEffect(data["effect"]),

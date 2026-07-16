@@ -1,8 +1,8 @@
 """Compatibility parser for legacy `.rules` DSL sources."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import re
+from dataclasses import dataclass, field
 from typing import Any
 
 from shared.rules.trace_pattern import parse_trace_pattern
@@ -200,7 +200,6 @@ def _condition_value(raw_value: str) -> Any:
 
 
 def _supports_runtime(fields: dict[str, str]) -> bool:
-    trace = str(fields.get("TRACE", "")).strip()
     condition = str(fields.get("CONDITION", "")).strip()
     on_line = str(fields.get("ON", "")).strip()
     if on_line and "tool_call" not in on_line:

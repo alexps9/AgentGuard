@@ -17,8 +17,8 @@ from backend.api.schemas import (
     TraceUploadRequest,
 )
 from backend.app_state import get_console, get_manager, get_skills
-from shared.schemas.context import RuntimeContext
 from backend.runtime.policy.snapshot_builder import snapshot_dict
+from shared.schemas.context import RuntimeContext
 
 router = APIRouter()
 

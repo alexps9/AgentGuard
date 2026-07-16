@@ -1,8 +1,9 @@
 """Shared normalization helpers for attach-mode agent adapters."""
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from agentguard.tools.metadata import ToolMetadata
 

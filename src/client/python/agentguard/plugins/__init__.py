@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from agentguard.plugins.base import BasePlugin, CheckResult
+from agentguard.plugins.llm_after import LLMOutputPlugin
+from agentguard.plugins.llm_before import JailbreakCheckPlugin
 from agentguard.plugins.manager import PluginManager, default_plugins
 from agentguard.plugins.registry import (
     get_plugin_class,
@@ -9,8 +11,6 @@ from agentguard.plugins.registry import (
     register,
     registered_plugins,
 )
-from agentguard.plugins.llm_after import LLMOutputPlugin
-from agentguard.plugins.llm_before import JailbreakCheckPlugin
 from agentguard.plugins.tool_after import ToolResultPlugin
 from agentguard.plugins.tool_before import ToolInvokePlugin
 

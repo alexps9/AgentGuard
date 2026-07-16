@@ -7,12 +7,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from backend.runtime.plugins.base import BasePlugin, CheckResult
+from backend.runtime.plugins.registry import get_plugin_class
 from shared.schemas.context import RuntimeContext
 from shared.schemas.decisions import DecisionType, GuardDecision
 from shared.schemas.events import EventType, RuntimeEvent
-
-from backend.runtime.plugins.base import BasePlugin, CheckResult
-from backend.runtime.plugins.registry import get_plugin_class
 
 PHASE_ORDER = ("llm_before", "llm_after", "tool_before", "tool_after", "global")
 

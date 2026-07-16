@@ -4,13 +4,12 @@ import json
 import types
 
 import pytest
-
 from agentguard import AgentGuard
 from agentguard.adapters.agent import autogen as autogen_adapter
-from agentguard.adapters.agent.base import BaseAgentAdapter
 from agentguard.adapters.agent import langchain as langchain_adapter
 from agentguard.adapters.agent import langgraph as langgraph_adapter
 from agentguard.adapters.agent import openai_agents as openai_agents_adapter
+from agentguard.adapters.agent.base import BaseAgentAdapter
 from agentguard.schemas import events as ev
 from agentguard.schemas.context import RuntimeContext
 
