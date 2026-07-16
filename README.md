@@ -406,11 +406,13 @@ Listed in no particular order. Thanks to everyone who helped shape AgentGuard.
 
 ## 🤝 Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md)
-(中文版 [CONTRIBUTING_CN.md](./CONTRIBUTING_CN.md)) for setup, testing, and PR
-guidelines, and [AGENTS.md](./AGENTS.md) if you're using an AI coding agent.
-Please follow our [Code of Conduct](./CODE_OF_CONDUCT.md), and report security
-issues privately per [SECURITY.md](./SECURITY.md) rather than via a public issue.
+Found a bug, dreamed up a feature, or built a new adapter? We'd love your help!
+
+- 🚀 Get started with our [contribution guide](./CONTRIBUTING.md)
+  ([中文版](./CONTRIBUTING_CN.md)).
+- 🤖 Coding with an AI agent? Check [AGENTS.md](./AGENTS.md).
+- 🤝 Be kind and follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
+- 🔒 Found a security issue? Report it privately via [SECURITY.md](./SECURITY.md).
 
 ## 📚 Citation
 
