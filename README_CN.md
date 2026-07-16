@@ -403,13 +403,10 @@ UI 界面还支持策略可视化配置和动态热更新。
 
 ## 🤝 参与贡献
 
-我们欢迎各种形式的贡献——缺陷报告、功能建议、文档改进、新的框架适配器以及 Pull Request。
-
-- 请先阅读 [CONTRIBUTING_CN.md](./CONTRIBUTING_CN.md) 了解环境搭建、测试与 PR 提交规范
-  （English: [CONTRIBUTING.md](./CONTRIBUTING.md)）。
-- 使用 AI 编码助手进行开发？可参考 [AGENTS.md](./AGENTS.md)（英文）中针对本仓库的构建/测试/规范说明。
-- 参与本项目请遵守我们的[行为准则](./CODE_OF_CONDUCT.md)。
-- 发现安全问题？请按照 [SECURITY.md](./SECURITY.md) 中的流程私下报告，而不要提交公开 Issue。
+欢迎各种形式的贡献！环境搭建、测试与 PR 提交规范见 [CONTRIBUTING_CN.md](./CONTRIBUTING_CN.md)
+（English: [CONTRIBUTING.md](./CONTRIBUTING.md)），使用 AI 编码助手开发可参考
+[AGENTS.md](./AGENTS.md)（英文）。请遵守我们的[行为准则](./CODE_OF_CONDUCT.md)，
+安全问题请按 [SECURITY.md](./SECURITY.md) 私下报告，而非提交公开 Issue。
 
 ## 📚 引用
 

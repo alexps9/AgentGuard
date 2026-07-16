@@ -406,16 +406,11 @@ Listed in no particular order. Thanks to everyone who helped shape AgentGuard.
 
 ## 🤝 Contributing
 
-Contributions of all kinds are welcome — bug reports, feature ideas,
-documentation improvements, new framework adapters, and pull requests.
-
-- Start with [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, testing, and PR
-  guidelines (简体中文版见 [CONTRIBUTING_CN.md](./CONTRIBUTING_CN.md))。
-- Building or extending with an AI coding agent? See [AGENTS.md](./AGENTS.md)
-  for repo-specific build/test/lint commands and conventions.
-- Please follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
-- Found a security issue? Report it privately per [SECURITY.md](./SECURITY.md)
-  instead of opening a public issue.
+Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md)
+(中文版 [CONTRIBUTING_CN.md](./CONTRIBUTING_CN.md)) for setup, testing, and PR
+guidelines, and [AGENTS.md](./AGENTS.md) if you're using an AI coding agent.
+Please follow our [Code of Conduct](./CODE_OF_CONDUCT.md), and report security
+issues privately per [SECURITY.md](./SECURITY.md) rather than via a public issue.
 
 ## 📚 Citation
 
