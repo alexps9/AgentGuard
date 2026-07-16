@@ -92,7 +92,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
+          # No `cache: npm` here: package-lock.json is gitignored in this repo
+          # (see docs.yml, which uses the same plain install), so there's no
+          # lockfile for actions/setup-node to hash.
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
