@@ -16,14 +16,14 @@ jobs:
     steps:
       - uses: actions/first-interaction@v3
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-message: >
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          issue_message: >
             👋 Thanks for opening your first issue in AgentGuard! A maintainer
             will take a look soon. In the meantime, please make sure you've
             included enough detail to reproduce the problem (see the issue
             template checklist) — see [CONTRIBUTING.md](https://github.com/WhitzardAgent/AgentGuard/blob/main/CONTRIBUTING.md)
             for more on how the project is organized.
-          pr-message: >
+          pr_message: >
             🎉 Thanks for your first pull request to AgentGuard! A maintainer
             will review it soon. While you wait, please double-check the PR
             checklist and make sure `ruff check src tests`, `pytest -q`, and
