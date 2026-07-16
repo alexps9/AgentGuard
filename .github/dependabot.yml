@@ -42,22 +42,34 @@ updates:
       - "dependencies"
       - "javascript"
 
-  # GitHub Actions workflows
+  # GitHub Actions workflows — grouped into a single PR per update cycle so
+  # a fresh dependabot.yml doesn't open a flood of one-action-per-PR noise.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     commit-message:
       prefix: "chore(ci)"
     labels:
       - "dependencies"
       - "ci"
 
-  # Docker base images
+  # Docker base images. Major-version bumps (e.g. a new Python minor/major
+  # release like 3.11 -> 3.14) are intentionally excluded: those need a
+  # manual compatibility check (native deps, wheel availability) rather than
+  # an auto-generated PR. Patch/minor updates on the pinned line still flow
+  # through normally.
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     commit-message:
       prefix: "chore(docker)"
     labels:
