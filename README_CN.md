@@ -10,6 +10,12 @@
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-GPL%20v3-16a34a?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="许可证" />
   </a>
+  <a href="https://github.com/WhitzardAgent/AgentGuard/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/WhitzardAgent/AgentGuard/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI" alt="CI" />
+  </a>
+  <a href="./CODE_OF_CONDUCT.md">
+    <img src="https://img.shields.io/badge/%E8%A1%8C%E4%B8%BA%E5%87%86%E5%88%99-Contributor%20Covenant%202.1-4baaaa?style=for-the-badge" alt="行为准则" />
+  </a>
 </p>
 
 <p align="center">
@@ -394,6 +400,16 @@ UI 界面还支持策略可视化配置和动态热更新。
 - 扩展对 LLM 输入输出的监控与 plugin 覆盖范围
 - 添加更丰富的策略执行动作
 - 提供策略自动推荐的能力
+
+## 🤝 参与贡献
+
+我们欢迎各种形式的贡献——缺陷报告、功能建议、文档改进、新的框架适配器以及 Pull Request。
+
+- 请先阅读 [CONTRIBUTING_CN.md](./CONTRIBUTING_CN.md) 了解环境搭建、测试与 PR 提交规范
+  （English: [CONTRIBUTING.md](./CONTRIBUTING.md)）。
+- 使用 AI 编码助手进行开发？可参考 [AGENTS.md](./AGENTS.md)（英文）中针对本仓库的构建/测试/规范说明。
+- 参与本项目请遵守我们的[行为准则](./CODE_OF_CONDUCT.md)。
+- 发现安全问题？请按照 [SECURITY.md](./SECURITY.md) 中的流程私下报告，而不要提交公开 Issue。
 
 ## 📚 引用
 
