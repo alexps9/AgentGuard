@@ -21,6 +21,8 @@ from typing import Any
 from agentguard.adapters.agent.dify_flask import (
     get_dify_flask_app,
     on_dify_flask_app_ready,
+)
+from agentguard.adapters.agent.dify_flask import (
     register_dify_flask_app as _register_shared_dify_flask_app,
 )
 from agentguard.schemas import events as ev
@@ -138,7 +140,7 @@ def _patch_workflow_publish_service(service_cls: Any) -> bool:
         return workflow
 
     _mark_patched(wrapper, original)
-    setattr(service_cls, "publish_workflow", wrapper)
+    service_cls.publish_workflow = wrapper
     return True
 
 
@@ -169,8 +171,12 @@ def _install_agent_v2_hooks() -> dict[str, Any]:
 def _install_legacy_api_hooks() -> dict[str, Any]:
     try:
         from core.model_manager import ModelInstance  # type: ignore
-        from core.plugin.backwards_invocation.model import PluginModelBackwardsInvocation  # type: ignore
-        from core.plugin.backwards_invocation.tool import PluginToolBackwardsInvocation  # type: ignore
+        from core.plugin.backwards_invocation.model import (
+            PluginModelBackwardsInvocation,  # type: ignore
+        )
+        from core.plugin.backwards_invocation.tool import (
+            PluginToolBackwardsInvocation,  # type: ignore
+        )
         from core.tools.tool_engine import ToolEngine  # type: ignore
         from core.workflow.nodes.agent.agent_node import AgentNode  # type: ignore
     except Exception as exc:
@@ -235,7 +241,7 @@ def _patch_runner(runner_cls: Any) -> bool:
             _current_guard.reset(token_guard)
 
     _mark_patched(wrapper, original)
-    setattr(runner_cls, "_run_agent", wrapper)
+    runner_cls._run_agent = wrapper
     return True
 
 
@@ -261,7 +267,7 @@ def _patch_legacy_agent_node(agent_node_cls: Any) -> bool:
             _current_guard.reset(token_guard)
 
     _mark_patched(wrapper, original)
-    setattr(agent_node_cls, "_run", wrapper)
+    agent_node_cls._run = wrapper
     return True
 
 
@@ -277,7 +283,7 @@ def _patch_workflow_node_factory(node_factory_cls: Any) -> bool:
         return node
 
     _mark_patched(wrapper, original)
-    setattr(node_factory_cls, "create_node", wrapper)
+    node_factory_cls.create_node = wrapper
     return True
 
 
@@ -317,7 +323,7 @@ def _wrap_workflow_node_run(node: Any, node_factory: Any, node_config: Any) -> b
 
     _mark_patched(wrapper, original)
     try:
-        setattr(node, "run", wrapper)
+        node.run = wrapper
     except Exception:
         return False
     return True
@@ -389,7 +395,7 @@ def _patch_legacy_model_invoke_llm(model_instance_cls: Any) -> bool:
         return result
 
     _mark_patched(wrapper, original)
-    setattr(model_instance_cls, "invoke_llm", wrapper)
+    model_instance_cls.invoke_llm = wrapper
     return True
 
 
@@ -418,7 +424,7 @@ def _patch_legacy_tool_agent_invoke(tool_engine_cls: Any) -> bool:
         return response
 
     _mark_patched(wrapper, original)
-    setattr(tool_engine_cls, "agent_invoke", wrapper)
+    tool_engine_cls.agent_invoke = wrapper
     return True
 
 
@@ -442,7 +448,7 @@ def _patch_workflow_tool_generic_invoke(tool_engine_cls: Any) -> bool:
         return _wrap_workflow_tool_generator(response, call)
 
     _mark_patched(wrapper, original)
-    setattr(tool_engine_cls, "generic_invoke", wrapper)
+    tool_engine_cls.generic_invoke = wrapper
     return True
 
 
@@ -464,7 +470,7 @@ def _patch_legacy_plugin_backwards_llm(invocation_cls: Any) -> bool:
         )
 
     _mark_patched(wrapper, original)
-    setattr(invocation_cls, "invoke_llm", _restore_descriptor(descriptor, wrapper))
+    invocation_cls.invoke_llm = _restore_descriptor(descriptor, wrapper)
     return True
 
 
@@ -500,7 +506,7 @@ def _patch_legacy_plugin_backwards_tool(invocation_cls: Any) -> bool:
         )
 
     _mark_patched(wrapper, original)
-    setattr(invocation_cls, "invoke_tool", _restore_descriptor(descriptor, wrapper))
+    invocation_cls.invoke_tool = _restore_descriptor(descriptor, wrapper)
     return True
 
 
@@ -533,7 +539,7 @@ def _patch_llm_request(model_cls: Any) -> bool:
         return response
 
     _mark_patched(wrapper, original)
-    setattr(model_cls, "request", wrapper)
+    model_cls.request = wrapper
     return True
 
 
@@ -577,7 +583,7 @@ def _patch_llm_request_stream(model_cls: Any) -> bool:
             raise AdapterError(blocked)
 
     _mark_patched(wrapper, original)
-    setattr(model_cls, "request_stream", wrapper)
+    model_cls.request_stream = wrapper
     return True
 
 
@@ -617,9 +623,9 @@ def _patch_tool_builder(tools_module: Any) -> bool:
                 return blocked
             try:
                 messages = await client.invoke(
-                    provider=getattr(tool_config, "provider"),
-                    tool_name=getattr(tool_config, "tool_name"),
-                    credential_type=getattr(tool_config, "credential_type"),
+                    provider=tool_config.provider,
+                    tool_name=tool_config.tool_name,
+                    credential_type=tool_config.credential_type,
                     credentials=dict(getattr(tool_config, "credentials", {}) or {}),
                     tool_parameters=merged_arguments,
                 )
@@ -636,7 +642,7 @@ def _patch_tool_builder(tools_module: Any) -> bool:
             return blocked_result if blocked_result is not None else result
 
         async def prepare_tool_definition(_ctx: Any, tool_def: Any) -> Any:
-            tool_definition_cls = getattr(tools_module, "ToolDefinition")
+            tool_definition_cls = tools_module.ToolDefinition
             return tool_definition_cls(
                 name=tool_def.name,
                 description=tool_def.description,
@@ -651,7 +657,7 @@ def _patch_tool_builder(tools_module: Any) -> bool:
                 include_return_schema=tool_def.include_return_schema,
             )
 
-        tool_cls = getattr(tools_module, "Tool")
+        tool_cls = tools_module.Tool
         return tool_cls(
             invoke_tool,
             takes_ctx=True,
@@ -661,7 +667,7 @@ def _patch_tool_builder(tools_module: Any) -> bool:
         )
 
     _mark_patched(wrapper, original)
-    setattr(tools_module, "_build_pydantic_ai_tool", wrapper)
+    tools_module._build_pydantic_ai_tool = wrapper
     return True
 
 
@@ -1275,7 +1281,10 @@ def _workflow_run_context(node: Any, node_factory: Any) -> Any:
         run_context = getattr(getattr(node_factory, "graph_init_params", None), "run_context", None)
     if run_context is not None:
         try:
-            from core.app.entities.app_invoke_entities import DIFY_RUN_CONTEXT_KEY, DifyRunContext  # type: ignore
+            from core.app.entities.app_invoke_entities import (  # type: ignore
+                DIFY_RUN_CONTEXT_KEY,
+                DifyRunContext,
+            )
 
             raw = run_context.get(DIFY_RUN_CONTEXT_KEY) if isinstance(run_context, dict) else run_context
             return DifyRunContext.model_validate(raw)
@@ -1288,7 +1297,10 @@ def _workflow_run_context(node: Any, node_factory: Any) -> Any:
                 )
             return run_context
     try:
-        from core.app.entities.app_invoke_entities import DIFY_RUN_CONTEXT_KEY, DifyRunContext  # type: ignore
+        from core.app.entities.app_invoke_entities import (  # type: ignore
+            DIFY_RUN_CONTEXT_KEY,
+            DifyRunContext,
+        )
 
         raw = node.require_run_context_value(DIFY_RUN_CONTEXT_KEY)
         return DifyRunContext.model_validate(raw)
@@ -1317,7 +1329,10 @@ def _metadata_from_runner(runner: Any) -> dict[str, Any]:
 
 def _legacy_run_context(node: Any) -> Any:
     try:
-        from core.app.entities.app_invoke_entities import DIFY_RUN_CONTEXT_KEY, DifyRunContext  # type: ignore
+        from core.app.entities.app_invoke_entities import (  # type: ignore
+            DIFY_RUN_CONTEXT_KEY,
+            DifyRunContext,
+        )
 
         raw = node.require_run_context_value(DIFY_RUN_CONTEXT_KEY)
         return DifyRunContext.model_validate(raw)

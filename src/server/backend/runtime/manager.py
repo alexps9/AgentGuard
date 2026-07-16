@@ -7,20 +7,21 @@ import threading
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
-from shared.schemas.context import RuntimeContext
-from shared.schemas.decisions import DecisionType, GuardDecision
-from shared.schemas.events import RuntimeEvent
-from backend.audit.audit_logger import AuditLogger
 from backend.audit import AuditTraceEntry
-from backend.runtime.plugins.base import CheckResult
-from backend.runtime.plugins import server_plugin_manager
-from backend.runtime.plugins.config_utils import merge_plugin_configs, normalize_plugin_config
+from backend.audit.audit_logger import AuditLogger
 from backend.runtime.degrade.planner import DegradePlanner
+from backend.runtime.plugins import server_plugin_manager
+from backend.runtime.plugins.base import CheckResult
+from backend.runtime.plugins.config_utils import merge_plugin_configs, normalize_plugin_config
 from backend.runtime.policy.engine import PolicyEngine
 from backend.runtime.review import ReviewQueue
 from backend.runtime.storage import SessionPool, TraceStore, trace_entry_event_dict
+from shared.schemas.context import RuntimeContext
+from shared.schemas.decisions import DecisionType, GuardDecision
+from shared.schemas.events import RuntimeEvent
 from shared.utils.json import safe_dumps, safe_loads
 from shared.utils.time import now_ts
 

@@ -10,6 +10,12 @@
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/License-GPL%20v3-16a34a?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License" />
   </a>
+  <a href="https://github.com/WhitzardAgent/AgentGuard/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/WhitzardAgent/AgentGuard/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI" alt="CI" />
+  </a>
+  <a href="./CODE_OF_CONDUCT.md">
+    <img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa?style=for-the-badge" alt="Contributor Covenant" />
+  </a>
 </p>
 
 <p align="center">
@@ -397,6 +403,19 @@ Listed in no particular order. Thanks to everyone who helped shape AgentGuard.
 - Expand LLM input/output monitoring and plugin coverage
 - Add more varied policy actions
 - Provide automatic security policy recommendations
+
+## 🤝 Contributing
+
+Contributions of all kinds are welcome — bug reports, feature ideas,
+documentation improvements, new framework adapters, and pull requests.
+
+- Start with [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, testing, and PR
+  guidelines (简体中文版见 [CONTRIBUTING_CN.md](./CONTRIBUTING_CN.md))。
+- Building or extending with an AI coding agent? See [AGENTS.md](./AGENTS.md)
+  for repo-specific build/test/lint commands and conventions.
+- Please follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
+- Found a security issue? Report it privately per [SECURITY.md](./SECURITY.md)
+  instead of opening a public issue.
 
 ## 📚 Citation
 

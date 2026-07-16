@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from agentguard import AgentGuard
 from agentguard.adapters.agent.metagpt import MetaGPTAgentAdapter
 

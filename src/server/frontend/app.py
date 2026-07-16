@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 import json
 import mimetypes
 import os
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import unquote, urljoin, urlparse
@@ -287,7 +287,7 @@ class FrontendPreviewHandler(BaseHTTPRequestHandler):
             prefix = (
                 f"window.AgentGuardConfig = "
                 f"{json.dumps({'apiBase': API_BASE_URL}, ensure_ascii=False)};\n"
-            ).encode("utf-8")
+            ).encode()
             body = prefix + file_path.read_bytes()
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "application/javascript; charset=utf-8")
