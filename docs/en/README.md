@@ -88,7 +88,7 @@ On top of the agent code from Step 1, you next need to import the AgentGuard cli
 #### 1. Install the AgentGuard client SDK
 
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 pip install -e .
 ```
@@ -208,7 +208,7 @@ Although the control server and agents can run on the same host, we recommend de
 First, clone the project on the control server:
 
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 ```
 

@@ -1,17 +1,19 @@
 # 🛡️ AgentGuard
 
+> 本 `open-science` 快照已隐去作者姓名、所属机构、联系方式与组织链接，供匿名评审使用。
+
 <p align="center">
-  <a href="https://whitzard.tech/AgentGuard/zh/">
+  <a href="./docs/zh/">
     <img src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3-Docs-0ea5e9?style=for-the-badge&logo=gitbook&logoColor=white" alt="文档" />
   </a>
-  <a href="https://github.com/WhitzardAgent/AgentGuard/releases">
+  <a href="./LICENSE">
     <img src="https://img.shields.io/badge/%E5%8F%91%E5%B8%83-v2.1-111827?style=for-the-badge&logo=github&logoColor=white" alt="发布 v2.1" />
   </a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-GPL%20v3-16a34a?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="许可证" />
   </a>
-  <a href="https://github.com/WhitzardAgent/AgentGuard/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/WhitzardAgent/AgentGuard/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI" alt="CI" />
+  <a href="./.github/workflows/ci.yml">
+    <img src="https://img.shields.io/badge/CI-workflow-111827?style=for-the-badge&logo=github&logoColor=white" alt="CI" />
   </a>
   <a href="./CODE_OF_CONDUCT.md">
     <img src="https://img.shields.io/badge/%E8%A1%8C%E4%B8%BA%E5%87%86%E5%88%99-Contributor%20Covenant%202.1-4baaaa?style=for-the-badge" alt="行为准则" />
@@ -62,7 +64,7 @@ AgentGuard 是一套面向 AI Agents 的零信任安全防护基座，兼容已�
 
 ![AgentGuard 设计定位](./docs/figs/positioning_zh.png)
 
-AgentGuard 可以集成到现有的智能体框架中，无需修改底层的执行逻辑。目前，它支持 LangChain、AutoGen、OpenAI Agents SDK、LangGraph、LlamaIndex、Dify 和 [OpenClaw](https://github.com/openclaw/openclaw) 的集成，并且我们正在持续扩大对更多智能体生态系统和框架的支持。关于 Dify 接入方式，可参考[Dify Agent 接入文档](https://whitzard.tech/AgentGuard/zh/how-to-plugin/dify.html)；关于 OpenClaw 的 JavaScript 侧接入方式，可参考[OpenClaw 适配器文档](https://whitzard.tech/AgentGuard/zh/how-to-plugin/openclaw_adapter.html)。
+AgentGuard 可以集成到现有的智能体框架中，无需修改底层的执行逻辑。目前，它支持 LangChain、AutoGen、OpenAI Agents SDK、LangGraph、LlamaIndex、Dify 和 [OpenClaw](https://github.com/openclaw/openclaw) 的集成，并且我们正在持续扩大对更多智能体生态系统和框架的支持。关于 Dify 接入方式，可参考[Dify Agent 接入文档](./docs/zh/how-to-plugin/dify.md)；关于 OpenClaw 的 JavaScript 侧接入方式，可参考[OpenClaw 适配器文档](./docs/zh/how-to-plugin/openclaw_adapter.md)。
 
 ## ✨ 功能特点
 
@@ -82,7 +84,7 @@ AgentGuard 既可以判断单次工具调用，也可以判断跨步骤攻击链
 
 ### 2. 无缝集成现有智能体框架
 
-AgentGuard 位于大模型规划引擎与工具之间，不介入智能体的规划、推理及任务编排逻辑。AgentGuard 为多种主流智能体框架提供了 Adapter，用户无需改动框架内部代码，也不用对现有智能体进行大规模重构，仅需极少量代码即可通过 Adapter 快速完成集成。对于暂未支持的智能体框架，AgentGuard 也提供了方便的开发接口让用户自定义 Adapter。请参考[客户端插件指南](https://whitzard.tech/AgentGuard/zh/plugins/custom_client_plugin.html)和[服务端插件指南](https://whitzard.tech/AgentGuard/zh/plugins/custom_server_plugin.html)。
+AgentGuard 位于大模型规划引擎与工具之间，不介入智能体的规划、推理及任务编排逻辑。AgentGuard 为多种主流智能体框架提供了 Adapter，用户无需改动框架内部代码，也不用对现有智能体进行大规模重构，仅需极少量代码即可通过 Adapter 快速完成集成。对于暂未支持的智能体框架，AgentGuard 也提供了方便的开发接口让用户自定义 Adapter。请参考[客户端插件指南](./docs/zh/plugins/custom_client_plugin.md)和[服务端插件指南](./docs/zh/plugins/custom_server_plugin.md)。
 
 目前我们支持的智能体框架有：
 - [LangChain](https://github.com/langchain-ai/langchain)
@@ -93,7 +95,7 @@ AgentGuard 位于大模型规划引擎与工具之间，不介入智能体的规
 - [Dify](https://github.com/langgenius/dify)
 - [OpenClaw](https://github.com/openclaw/openclaw)
 
-可参考[Dify Agent 接入文档](https://whitzard.tech/AgentGuard/zh/how-to-plugin/dify.html)和[OpenClaw 适配器文档](https://whitzard.tech/AgentGuard/zh/how-to-plugin/openclaw_adapter.html)。
+可参考[Dify Agent 接入文档](./docs/zh/how-to-plugin/dify.md)和[OpenClaw 适配器文档](./docs/zh/how-to-plugin/openclaw_adapter.md)。
 
 ### 3. 可视化策略配置与行为审计
 
@@ -103,7 +105,7 @@ AgentGuard 提供前端控制台来管理智能体。通过可视化页面，用
 
 ### 自定义审计器扩展
 
-后端同样支持可插拔的自定义审计器，用于对执行后的轨迹进行复核。通用审计器抽象位于 `src/server/backend/audit/`，具体审计器实现位于 `src/server/backend/audit/auditors/`。详情请参考文档中的[自定义审计器章节](https://whitzard.tech/AgentGuard/zh/auditors.html)。
+后端同样支持可插拔的自定义审计器，用于对执行后的轨迹进行复核。通用审计器抽象位于 `src/server/backend/audit/`，具体审计器实现位于 `src/server/backend/audit/auditors/`。详情请参考文档中的[自定义审计器章节](./docs/zh/auditors.md)。
 
 ### 4. 集群管理
 
@@ -118,7 +120,7 @@ AgentGuard 采用集中式中控架构，实现对分布式智能体进程的统
 选择一台主机作为中控服务器，然后执行以下命令下载 AgentGuard：
 
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 ```
 
@@ -179,7 +181,7 @@ EOF
 
 该策略针对两个智能体工具：`retrieve_doc` 和 `send_email_to`，它们分别用于检索特定 id 的文档，以及将文档内容发送到指定的邮箱地址。这项策略描述了这么一个规则：信任级别小于 2 的智能体在执行任务时，只能将 id 为 0 的机密文件发送给 `admin@example.com` 邮箱，发送到其他地址一律不允许。
 
-> AgentGuard 也提供了可视化策略配置方式，并支持策略的动态热更新，详情请参考[可视化策略配置文档](https://whitzard.tech/AgentGuard/zh/policies/quick_config.html)。
+> AgentGuard 也提供了可视化策略配置方式，并支持策略的动态热更新，详情请参考[可视化策略配置文档](./docs/zh/policies/quick_config.md)。
 
 接下来配置中控服务的环境变量：
 
@@ -211,7 +213,7 @@ UI 界面监听在：`38008` 端口
 切换到智能体端的主机，执行以下命令：
 
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 pip install -e .
 ```
@@ -351,7 +353,7 @@ During task with name 'tools' and id 'ab34afab-e0f3-14f6-7517-bba2e47f0ea6'
 
 UI 界面还支持策略可视化配置和动态热更新。
 
-关于 AgentGuard 部署的其他细节，请参考[项目文档](https://whitzard.tech/AgentGuard/zh/)。
+关于 AgentGuard 部署的其他细节，请参考[项目文档](./docs/zh/)。
 
 ## 🎬 演示视频
 
@@ -383,14 +385,12 @@ UI 界面还支持策略可视化配置和动态热更新。
 
 - **客户端**：通过极少量代码修改，客户端可集成进智能体框架中，并能够在 LLM 调用前后、工具调用前后进行拦截。客户端可以先在本地执行轻量级过滤，再将事件发送到服务端，由服务端根据配置的 plugin 进一步检测。
 - **服务器**：服务器接收来自客户端的信息，并根据配置的 plugin 对智能体动作进行策略评估，生成策略决策并返回给客户端；同时服务器持续监控智能体状态，供管理员进行审计。
-- **Plugin 扩展**：客户端与服务器都支持可插拔 plugin。若需添加自定义 plugin，可参考[客户端 plugin 指南](https://whitzard.tech/AgentGuard/zh/plugins/custom_client_plugin.html)和[服务端 plugin 指南](https://whitzard.tech/AgentGuard/zh/plugins/custom_server_plugin.html)。
-- **Custom Auditor 扩展**：后端也支持面向事后轨迹审计的可插拔 custom auditor。公共抽象位于 `src/server/backend/audit/`，具体 auditor 实现位于 `src/server/backend/audit/auditors/`。详见[自定义 auditor 文档](https://whitzard.tech/AgentGuard/zh/auditors.html)。
+- **Plugin 扩展**：客户端与服务器都支持可插拔 plugin。若需添加自定义 plugin，可参考[客户端 plugin 指南](./docs/zh/plugins/custom_client_plugin.md)和[服务端 plugin 指南](./docs/zh/plugins/custom_server_plugin.md)。
+- **Custom Auditor 扩展**：后端也支持面向事后轨迹审计的可插拔 custom auditor。公共抽象位于 `src/server/backend/audit/`，具体 auditor 实现位于 `src/server/backend/audit/auditors/`。详见[自定义 auditor 文档](./docs/zh/auditors.md)。
 
 ## 👥 贡献者
 
-<img src="./docs/figs/contributors-zh.svg" width="100%" alt="AgentGuard 贡献者" />
-
-排名不分先后，感谢所有为 AgentGuard 贡献过想法、代码和反馈的朋友。
+本匿名快照已隐去贡献者姓名、职务与所属机构。
 
 ## 🎯 未来计划
 
@@ -415,12 +415,9 @@ UI 界面还支持策略可视化配置和动态热更新。
 ```bibtex
 @misc{agentguard2026,
       title={AgentGuard: An Attribute-Based Access Control Framework for Tool-Use LLM-Based Agent},
-      author={Jiaqi Luo* and Songyang Peng* and Jiarun Dai and Zhile Chen and Zhuoxiang Shen and Geng Hong and Xudong Pan and Yuan Zhang and Min Yang},
+      author={Anonymous Authors},
       year={2026},
-      eprint={2605.28071},
-      archivePrefix={arXiv},
-      primaryClass={cs.CR},
-      url={https://arxiv.org/abs/2605.28071},
+      note={Preprint identifier withheld for anonymous review},
 }
 ```
 

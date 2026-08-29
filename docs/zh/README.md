@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
 #### 1. 安装 AgentGuard 的访问控制客户端 SDK
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 pip install -e .
 ```
@@ -199,7 +199,7 @@ if __name__ == "__main__":
 
 首先，在中控服务器上克隆本项目
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 ```
 

@@ -9,7 +9,7 @@
 
 ## 参与方式
 
-- 通过 [GitHub Issues](https://github.com/WhitzardAgent/AgentGuard/issues/new/choose) **报告缺陷**。
+- 通过 [GitHub Issues](https://github.com/anonymous/AgentGuard/issues/new/choose) **报告缺陷**。
 - 在提交较大的 PR 之前，先通过 feature request Issue **提出功能设想**，与维护者对齐方向。
 - 改进 `docs/en/**`（英文）与 `docs/zh/**`（简体中文）下的**文档**。
 - 为尚未支持的智能体框架**新增适配器**（参考
@@ -28,7 +28,7 @@
 ### 克隆并安装
 
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 
 # Python 客户端 + 服务端（可编辑安装，附带 dev/server 附加依赖）
@@ -96,8 +96,8 @@ mypy src                 # 目前仅作为参考项，暂不作为强制门槛�
 - 一篇简短的接入文档，放在 `docs/en/how-to-plugin/`（最好同时提供
   `docs/zh/how-to-plugin/` 版本）。
 
-可扩展性模型详见[客户端插件指南](https://whitzard.tech/AgentGuard/zh/plugins/custom_client_plugin.html)与
-[服务端插件指南](https://whitzard.tech/AgentGuard/zh/plugins/custom_server_plugin.html)。
+可扩展性模型详见[客户端插件指南](./docs/zh/plugins/custom_client_plugin.md)与
+[服务端插件指南](./docs/zh/plugins/custom_server_plugin.md)。
 
 ## 许可证
 

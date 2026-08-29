@@ -55,7 +55,8 @@ the community in public spaces.
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the project maintainers by opening a confidential report via
 GitHub (see [SECURITY.md](./SECURITY.md) for the private reporting channel)
-or by emailing **contact@whitzard.tech**. All complaints will be reviewed and
+or through the private maintainer channel listed in the review submission
+(public contact addresses are withheld in this anonymized snapshot). All complaints will be reviewed and
 investigated promptly and fairly.
 
 All project maintainers are obligated to respect the privacy and security of

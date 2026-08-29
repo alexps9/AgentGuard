@@ -164,7 +164,7 @@ await guard.close();
 
 完整的 JS LangChain demo 见：
 
-- [examples/js/langchain-agentguard-demo.js](/f:/陈知乐/研究生/AgentGuard/examples/js/langchain-agentguard-demo.js)
+- [examples/js/langchain-agentguard-demo.js](../../../../examples/js/langchain-agentguard-demo.js)
 
 如果你愿意，我下一步还可以继续补：
 

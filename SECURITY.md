@@ -20,13 +20,14 @@ issues, discussions, or pull requests.**
 Instead, please use one of the following private channels:
 
 1. **Preferred:** Open a
-   [private security advisory](https://github.com/WhitzardAgent/AgentGuard/security/advisories/new)
+   [private security advisory](https://github.com/anonymous/AgentGuard/security/advisories/new)
    via GitHub's "Report a vulnerability" feature on this repository. This
    keeps the report confidential between you and the maintainers until a fix
    is available.
-2. **Alternative:** Email **contact@whitzard.tech** with a description of
-   the issue. If you can, encrypt sensitive details or ask for a secure
-   channel in your first message.
+2. **Alternative:** Contact the maintainers through the private channel listed
+   in the review submission (public contact addresses are withheld in this
+   anonymized snapshot). If you can, encrypt sensitive details or ask for a
+   secure channel in your first message.
 
 Please include as much of the following as you can:
 

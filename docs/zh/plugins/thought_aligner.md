@@ -2,7 +2,7 @@
 
 `thought_aligner` 是一个默认关闭、按需启用的 server 侧 `llm_after` plugin。它会先扣住 Python agent 第一次生成的模型响应，把其中可获得的推理发送到 server 上配置的 Thought-Aligner 端点，然后让同一个 agent 模型基于安全 Thought 重新生成 `Action` 和 `Action Input`。第一次生成的 Action 不会先交给框架解析器或工具执行器。
 
-实现遵循 [Thought-Aligner-7B 模型卡](https://huggingface.co/WhitzardAgent/Thought-Aligner-7B)给出的 prompt。商业使用前请确认该模型的 CC BY-NC 4.0 许可证是否适用。
+实现遵循 Thought-Aligner-7B 模型卡给出的 prompt（托管模型地址已在本匿名快照中隐去）。商业使用前请确认该模型的 CC BY-NC 4.0 许可证是否适用。
 
 ## 执行流程
 

@@ -21,10 +21,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/WhitzardAgent/AgentGuard"
-Documentation = "https://whitzard.tech/AgentGuard/"
-Issues = "https://github.com/WhitzardAgent/AgentGuard/issues"
-Releases = "https://github.com/WhitzardAgent/AgentGuard/releases"
+Homepage = "https://github.com/anonymous/AgentGuard"
+Documentation = "https://github.com/anonymous/AgentGuard/tree/open-science/docs"
+Issues = "https://github.com/anonymous/AgentGuard/issues"
+Releases = "https://github.com/anonymous/AgentGuard/releases"
 
 [project.scripts]
 agentguard = "agentguard.cli:main"

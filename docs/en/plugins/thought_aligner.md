@@ -2,7 +2,7 @@
 
 `thought_aligner` is an opt-in `llm_after` server plugin. It holds a Python agent's first model response, sends the exposed reasoning to a server-hosted Thought-Aligner endpoint, and instructs the same agent model to regenerate `Action` and `Action Input` from the aligned thought before the first action can reach the framework's parser or tool executor.
 
-The implementation follows the [Thought-Aligner-7B model-card prompt](https://huggingface.co/WhitzardAgent/Thought-Aligner-7B). Review that model's CC BY-NC 4.0 license before commercial use.
+The implementation follows the Thought-Aligner-7B model-card prompt (hosted checkpoint URL withheld for anonymous review). Review that model's CC BY-NC 4.0 license before commercial use.
 
 ## Execution flow
 

@@ -1,17 +1,20 @@
 # 🛡️ AgentGuard
 
+> This `open-science` snapshot withholds author names, affiliations, contact
+> addresses, and organization URLs for anonymous review.
+
 <p align="center">
-  <a href="https://whitzard.tech/AgentGuard/en/">
+  <a href="./docs/en/">
     <img src="https://img.shields.io/badge/Document-Docs-0ea5e9?style=for-the-badge&logo=gitbook&logoColor=white" alt="Document" />
   </a>
-  <a href="https://github.com/WhitzardAgent/AgentGuard/releases">
+  <a href="./LICENSE">
     <img src="https://img.shields.io/badge/Release-v2.1-111827?style=for-the-badge&logo=github&logoColor=white" alt="Release v2.1" />
   </a>
   <a href="./LICENSE">
     <img src="https://img.shields.io/badge/License-GPL%20v3-16a34a?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License" />
   </a>
-  <a href="https://github.com/WhitzardAgent/AgentGuard/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/WhitzardAgent/AgentGuard/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI" alt="CI" />
+  <a href="./.github/workflows/ci.yml">
+    <img src="https://img.shields.io/badge/CI-workflow-111827?style=for-the-badge&logo=github&logoColor=white" alt="CI" />
   </a>
   <a href="./CODE_OF_CONDUCT.md">
     <img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa?style=for-the-badge" alt="Contributor Covenant" />
@@ -62,7 +65,7 @@ Today, AgentGuard covers several key technical areas highlighted in Anthropic's 
 
 ![AgentGuard Positioning](./docs/figs/positioning_en.png)
 
-AgentGuard can be integrated into existing agent frameworks without modifying the underlying execution logic. Currently, it supports LangChain, AutoGen, OpenAI Agents SDK, LangGraph, LlamaIndex, Dify, and [OpenClaw](https://github.com/openclaw/openclaw), and we are continuously expanding support for additional agent ecosystems and frameworks. For Dify integration, refer to the [Dify Agent integration guide](https://whitzard.tech/AgentGuard/en/how-to-plugin/dify.html). For JavaScript-side integration details, refer to the [OpenClaw adapter document](https://whitzard.tech/AgentGuard/en/how-to-plugin/openclaw_adapter.html).
+AgentGuard can be integrated into existing agent frameworks without modifying the underlying execution logic. Currently, it supports LangChain, AutoGen, OpenAI Agents SDK, LangGraph, LlamaIndex, Dify, and [OpenClaw](https://github.com/openclaw/openclaw), and we are continuously expanding support for additional agent ecosystems and frameworks. For Dify integration, refer to the [Dify Agent integration guide](./docs/en/how-to-plugin/dify.md). For JavaScript-side integration details, refer to the [OpenClaw adapter document](./docs/en/how-to-plugin/openclaw_adapter.md).
 
 ## ✨ Features
 
@@ -82,7 +85,7 @@ AgentGuard can evaluate both individual tool calls and cross-step attack chains.
 
 ### 2. Seamless Integration with Agent Frameworks
 
-AgentGuard sits between the LLM-based planning engine and tools, and does not interfere with agent planning, reasoning, or task orchestration. Adapters are provided for several mainstream agent frameworks, allowing users to integrate AgentGuard with minimal code and without modifying framework internals or heavily refactoring existing agents. For frameworks not yet supported, AgentGuard offers a straightforward development interface for building custom adapters. See the [client plugin guide](https://whitzard.tech/AgentGuard/en/plugins/custom_client_plugin.html) and the [server plugin guide](https://whitzard.tech/AgentGuard/en/plugins/custom_server_plugin.html).
+AgentGuard sits between the LLM-based planning engine and tools, and does not interfere with agent planning, reasoning, or task orchestration. Adapters are provided for several mainstream agent frameworks, allowing users to integrate AgentGuard with minimal code and without modifying framework internals or heavily refactoring existing agents. For frameworks not yet supported, AgentGuard offers a straightforward development interface for building custom adapters. See the [client plugin guide](./docs/en/plugins/custom_client_plugin.md) and the [server plugin guide](./docs/en/plugins/custom_server_plugin.md).
 
 Currently, we support the following agent frameworks:
 - [LangChain](https://github.com/langchain-ai/langchain)
@@ -93,7 +96,7 @@ Currently, we support the following agent frameworks:
 - [Dify](https://github.com/langgenius/dify)
 - [OpenClaw](https://github.com/openclaw/openclaw)
 
-Refer to the [Dify Agent integration guide](https://whitzard.tech/AgentGuard/en/how-to-plugin/dify.html) and the [OpenClaw adapter document](https://whitzard.tech/AgentGuard/en/how-to-plugin/openclaw_adapter.html).
+Refer to the [Dify Agent integration guide](./docs/en/how-to-plugin/dify.md) and the [OpenClaw adapter document](./docs/en/how-to-plugin/openclaw_adapter.md).
 
 ### 3. Visual Policy Configuration & Audit
 
@@ -103,7 +106,7 @@ The runtime dashboard displays agent health, recent traffic, pending approval re
 
 ### Custom Auditor Extensibility
 
-The backend also supports pluggable custom auditors for post-hoc trace review. Shared auditor abstractions live under `src/server/backend/audit/`, while concrete auditors live under `src/server/backend/audit/auditors/`. See the documentation chapter on [custom auditors](https://whitzard.tech/AgentGuard/en/auditors.html).
+The backend also supports pluggable custom auditors for post-hoc trace review. Shared auditor abstractions live under `src/server/backend/audit/`, while concrete auditors live under `src/server/backend/audit/auditors/`. See the documentation chapter on [custom auditors](./docs/en/auditors.md).
 
 ### 4. Cluster Management
 
@@ -118,7 +121,7 @@ AgentGuard uses a centralized control-plane architecture to govern distributed a
 Choose a host to serve as the control server, then clone AgentGuard:
 
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 ```
 
@@ -180,7 +183,7 @@ EOF
 
 This policy involves two agent tools: `retrieve_doc` and `send_email_to`, which retrieve a document by its id and send document content to a specified email address, respectively. The policy states that agents with a trust level below 2 may only send the confidential document (id=0) to `admin@example.com`; sending it to any other recipient is denied.
 
-> AgentGuard also supports visual policy configuration with dynamic hot-reloading. See the [visual policy configuration document](https://whitzard.tech/AgentGuard/en/policies/quick_config.html) for details.
+> AgentGuard also supports visual policy configuration with dynamic hot-reloading. See the [visual policy configuration document](./docs/en/policies/quick_config.md) for details.
 
 Next, configure the environment variables for the control server:
 
@@ -213,7 +216,7 @@ Visit `http://localhost:38008` to see the UI.
 On the agent host, run:
 
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 pip install -e .
 ```
@@ -354,7 +357,7 @@ You can inspect the agent's runtime status and policy enforcement audit logs thr
 
 The UI also supports visual policy configuration and dynamic hot-reloading.
 
-For additional deployment details, refer to the [Documentation](https://whitzard.tech/AgentGuard/en/).
+For additional deployment details, refer to the [Documentation](./docs/en/).
 
 ## 🎬 Demo Video
 
@@ -386,14 +389,12 @@ The high-level architecture of AgentGuard is shown below.
 
 - **Client**: With minimal code modifications, the AgentGuard client integrates into agent frameworks and can intercept before and after LLM calls, as well as before and after tool invocations. It can perform lightweight local filtering on the client side and forward events to the server for deeper inspection by configured plugins.
 - **Server**: The server receives information from clients, uses configured plugins to evaluate agent actions against policies, produces policy decisions, and sends them back to clients. It also monitors agent status for administrative auditing.
-- **Plugin Extensibility**: Both client and server support pluggable plugins. To add custom plugins, see the [client plugin guide](https://whitzard.tech/AgentGuard/en/plugins/custom_client_plugin.html) and the [server plugin guide](https://whitzard.tech/AgentGuard/en/plugins/custom_server_plugin.html).
-- **Custom Auditor Extensibility**: The backend also supports pluggable custom auditors for post-hoc trace review. Shared auditor abstractions live under `src/server/backend/audit/`, while concrete auditors live under `src/server/backend/audit/auditors/`. See the documentation chapter on [custom auditors](https://whitzard.tech/AgentGuard/en/auditors.html).
+- **Plugin Extensibility**: Both client and server support pluggable plugins. To add custom plugins, see the [client plugin guide](./docs/en/plugins/custom_client_plugin.md) and the [server plugin guide](./docs/en/plugins/custom_server_plugin.md).
+- **Custom Auditor Extensibility**: The backend also supports pluggable custom auditors for post-hoc trace review. Shared auditor abstractions live under `src/server/backend/audit/`, while concrete auditors live under `src/server/backend/audit/auditors/`. See the documentation chapter on [custom auditors](./docs/en/auditors.md).
 
 ## 👥 Contributors
 
-<img src="./docs/figs/contributors-en.svg" width="100%" alt="AgentGuard contributors" />
-
-Listed in no particular order. Thanks to everyone who helped shape AgentGuard.
+Contributor names, roles, and affiliations are withheld in this anonymized snapshot.
 
 ## 🎯 Roadmap
 
@@ -421,12 +422,9 @@ If you use AgentGuard in your research, please cite:
 ```bibtex
 @misc{agentguard2026,
       title={AgentGuard: An Attribute-Based Access Control Framework for Tool-Use LLM-Based Agent},
-      author={Jiaqi Luo* and Songyang Peng* and Jiarun Dai and Zhile Chen and Zhuoxiang Shen and Geng Hong and Xudong Pan and Yuan Zhang and Min Yang},
+      author={Anonymous Authors},
       year={2026},
-      eprint={2605.28071},
-      archivePrefix={arXiv},
-      primaryClass={cs.CR},
-      url={https://arxiv.org/abs/2605.28071},
+      note={Preprint identifier withheld for anonymous review},
 }
 ```
 

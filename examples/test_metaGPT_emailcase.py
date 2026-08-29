@@ -15,7 +15,7 @@ import _bootstrap  # noqa: F401
 from agentguard import Guard, Principal
 from agentguard.schemas.events import EventType, RuntimeEvent
 
-METAGPT_ROOT = Path(os.getenv("METAGPT_ROOT", "/home/dgroup/hjr/MetaGPT")).resolve()
+METAGPT_ROOT = Path(os.getenv("METAGPT_ROOT", "/home/user/MetaGPT")).resolve()
 if str(METAGPT_ROOT) not in sys.path:
     sys.path.insert(0, str(METAGPT_ROOT))
 

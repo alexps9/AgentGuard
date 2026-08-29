@@ -14,7 +14,7 @@ a public issue.
 
 ## Ways to Contribute
 
-- **Report bugs** via [GitHub Issues](https://github.com/WhitzardAgent/AgentGuard/issues/new/choose).
+- **Report bugs** via [GitHub Issues](https://github.com/anonymous/AgentGuard/issues/new/choose).
 - **Propose features** or discuss design changes via a feature-request issue
   before sending a large PR, so we can align on direction first.
 - **Improve docs** under `docs/en/**` (English) and `docs/zh/**` (简体中文).
@@ -35,7 +35,7 @@ a public issue.
 ### Clone and install
 
 ```bash
-git clone https://github.com/WhitzardAgent/AgentGuard.git
+git clone https://github.com/anonymous/AgentGuard.git
 cd AgentGuard
 
 # Python client + server (editable install with dev/server extras)
@@ -110,8 +110,8 @@ and add:
 - A short how-to doc under `docs/en/how-to-plugin/` (and ideally
   `docs/zh/how-to-plugin/`).
 
-See the [client plugin guide](https://whitzard.tech/AgentGuard/en/plugins/custom_client_plugin.html)
-and [server plugin guide](https://whitzard.tech/AgentGuard/en/plugins/custom_server_plugin.html)
+See the [client plugin guide](./docs/en/plugins/custom_client_plugin.md)
+and [server plugin guide](./docs/en/plugins/custom_server_plugin.md)
 for the extensibility model.
 
 ## License
