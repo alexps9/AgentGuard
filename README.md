@@ -415,19 +415,6 @@ Found a bug, dreamed up a feature, or built a new adapter? We'd love your help!
 - 🤝 Be kind and follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
 - 🔒 Found a security issue? Report it privately via [SECURITY.md](./SECURITY.md).
 
-## 📚 Citation
-
-If you use AgentGuard in your research, please cite:
-
-```bibtex
-@misc{agentguard2026,
-      title={AgentGuard: An Attribute-Based Access Control Framework for Tool-Use LLM-Based Agent},
-      author={Anonymous Authors},
-      year={2026},
-      note={Preprint identifier withheld for anonymous review},
-}
-```
-
 ## 📜 License
 
 This project is licensed under the [GNU General Public License v3.0 (GPLv3)](./LICENSE).

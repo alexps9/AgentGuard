@@ -408,19 +408,6 @@ UI 界面还支持策略可视化配置和动态热更新。
 [AGENTS.md](./AGENTS.md)（英文）。请遵守我们的[行为准则](./CODE_OF_CONDUCT.md)，
 安全问题请按 [SECURITY.md](./SECURITY.md) 私下报告，而非提交公开 Issue。
 
-## 📚 引用
-
-如果你在研究工作中使用了 AgentGuard，请引用：
-
-```bibtex
-@misc{agentguard2026,
-      title={AgentGuard: An Attribute-Based Access Control Framework for Tool-Use LLM-Based Agent},
-      author={Anonymous Authors},
-      year={2026},
-      note={Preprint identifier withheld for anonymous review},
-}
-```
-
 ## 📜 许可证
 
 本项目基于 [GNU 通用公共许可证 v3.0（GPLv3）](./LICENSE) 开源。
